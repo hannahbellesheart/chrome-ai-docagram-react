@@ -29,7 +29,7 @@ const DiagramComponent: React.FC<DiagramComponentProps> = ({ diagramDefinition }
     renderMermaidDiagram();
   }, [diagramDefinition]);
 
-  return <div ref={diagramRef}></div>;
+  return <div className='p-2' ref={diagramRef}></div>;
 };
 
 export default DiagramComponent;

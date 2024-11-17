@@ -2,4 +2,11 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 });
 
-export {}
+chrome.commands.onCommand.addListener((shortcut) => {
+  console.log("Reloading extension...");
+  if (shortcut.includes("+M")) {
+    chrome.runtime.reload();
+  }
+});
+
+export {};

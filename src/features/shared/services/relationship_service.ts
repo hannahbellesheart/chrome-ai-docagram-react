@@ -15,6 +15,20 @@ export class RelationshipService {
     this.selectedEntity = null;
     this.uniqueEntityCount = new Map<string, number>();
   }
+  private areRelationshipsEqual(
+    rel1: Relationship,
+    rel2: Relationship
+  ): boolean {
+    // Check both directions since A->B is same as B->A
+    return (
+      (rel1.entity1 === rel2.entity1 &&
+        rel1.entity2 === rel2.entity2 &&
+        rel1.description === rel2.description) ||
+      (rel1.entity1 === rel2.entity2 &&
+        rel1.entity2 === rel2.entity1 &&
+        rel1.description === rel2.description)
+    );
+  }
 
   /**
    * Parses relationships from a given text and updates internal state.
@@ -32,31 +46,41 @@ export class RelationshipService {
       if (match) {
         const entity1 = match[1].trim();
         const entity2 = match[2].trim();
+        const description = match[3].trim();
 
-        // Increment entity count
-        this.uniqueEntityCount.set(
-          entity1,
-          (this.uniqueEntityCount.get(entity1) || 0) + 1
-        );
-        this.uniqueEntityCount.set(
-          entity2,
-          (this.uniqueEntityCount.get(entity2) || 0) + 1
-        );
-
-        // Store entities with their source URL if they don't already exist
-        if (!this.uniqueEntities.has(entity1)) {
-          this.uniqueEntities.set(entity1, sourceUrl);
-        }
-        if (!this.uniqueEntities.has(entity2)) {
-          this.uniqueEntities.set(entity2, sourceUrl);
-        }
-
-        newRelationships.push({
+        const newRelationship = {
           entity1,
           entity2,
-          description: match[3].trim(),
+          description,
           sourceUrl,
-        });
+        };
+
+        // Check if relationship already exists
+        const isDuplicate = this.relationships.some((existing) =>
+          this.areRelationshipsEqual(existing, newRelationship)
+        );
+
+        if (!isDuplicate) {
+          // Increment entity count
+          this.uniqueEntityCount.set(
+            entity1,
+            (this.uniqueEntityCount.get(entity1) || 0) + 1
+          );
+          this.uniqueEntityCount.set(
+            entity2,
+            (this.uniqueEntityCount.get(entity2) || 0) + 1
+          );
+
+          // Store entities with their source URL if they don't already exist
+          if (!this.uniqueEntities.has(entity1)) {
+            this.uniqueEntities.set(entity1, sourceUrl);
+          }
+          if (!this.uniqueEntities.has(entity2)) {
+            this.uniqueEntities.set(entity2, sourceUrl);
+          }
+
+          newRelationships.push(newRelationship);
+        }
       }
     }
 
@@ -162,5 +186,15 @@ export class RelationshipService {
         (this.uniqueEntityCount.get(rel.entity2) || 0) + 1
       );
     }
+  }
+
+  /**
+   * Retrieves the count of references for a given entity.
+   *
+   * @param entity - The name of the entity.
+   * @returns The number of times the entity has been referenced.
+   */
+  getEntityCount(entity: string): number {
+    return this.uniqueEntityCount.get(entity) || 0;
   }
 }

@@ -1,1 +1,1 @@
-(()=>{"use strict";chrome.runtime.onInstalled.addListener((function(){chrome.sidePanel.setPanelBehavior({openPanelOnActionClick:!0})}))})();
+(()=>{"use strict";chrome.runtime.onInstalled.addListener((function(){chrome.sidePanel.setPanelBehavior({openPanelOnActionClick:!0})})),chrome.commands.onCommand.addListener((function(e){console.log("Reloading extension..."),e.includes("+M")&&chrome.runtime.reload()}))})();
