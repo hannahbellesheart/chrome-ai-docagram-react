@@ -1,5 +1,3 @@
-// DiagramComponent.tsx
-
 import React, { useEffect, useRef } from "react";
 import mermaid from "mermaid";
 
@@ -15,27 +13,58 @@ const DiagramComponent: React.FC<DiagramComponentProps> = ({
   const diagramRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Initialize Mermaid
+    // Initialize Mermaid only once
     mermaid.initialize({ startOnLoad: false });
+  }, []);
 
+  useEffect(() => {
     const renderMermaidDiagram = async () => {
       if (diagramRef.current) {
         try {
-          // Render the Mermaid diagram
-          const { svg } = await mermaid.render(
-            "mermaid-diagram",
+          // Generate a unique ID for the diagram
+          const uniqueId = `mermaid-diagram-${Math.random()
+            .toString(36)
+            .substr(2, 9)}`;
+
+          // Render the Mermaid diagram and get bindFunctions
+          const { svg, bindFunctions } = await mermaid.render(
+            uniqueId,
             diagramDefinition
           );
+
+          // Set the innerHTML of the diagram container
           diagramRef.current.innerHTML = svg;
 
-          // Add click listeners to nodes
+          // Bind any predefined functions from Mermaid
+          if (bindFunctions) {
+            bindFunctions(diagramRef.current);
+          }
+
+          // Add custom click listeners to nodes
           const nodes = diagramRef.current.querySelectorAll("g.node");
           nodes.forEach((node) => {
             (node as HTMLElement).style.cursor = "pointer";
             node.addEventListener("click", () => {
-              const title = node.querySelector("title")?.textContent;
-              if (title) {
-                onNodeClick(title);
+              console.log("Node clicked:", node);
+
+              // Try to get the entity name from the text content directly
+              const textElement = node.querySelector(
+                "foreignObject div span.nodeLabel"
+              );
+              let entityName = "";
+
+              if (textElement) {
+                entityName = textElement.textContent || "";
+              } else {
+                // Fallback to the 'title' element if 'textElement' is not found
+                const titleElement = node.querySelector("title");
+                if (titleElement) {
+                  entityName = titleElement.textContent || "";
+                }
+              }
+
+              if (entityName) {
+                onNodeClick(entityName);
               }
             });
           });
@@ -48,7 +77,9 @@ const DiagramComponent: React.FC<DiagramComponentProps> = ({
     renderMermaidDiagram();
   }, [diagramDefinition, onNodeClick]);
 
-  return <div className="p-2" ref={diagramRef}></div>;
+  return (
+    <div className="p-2 transition-opacity duration-300" ref={diagramRef}></div>
+  );
 };
 
 export default DiagramComponent;

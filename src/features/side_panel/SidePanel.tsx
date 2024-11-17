@@ -97,10 +97,36 @@ function SidePanel() {
   const sanitizeMermaidText = (text: string): string => {
     return text
       .replace(/[-–—]/g, "") // Remove hyphens and dashes
-      .replace(/[,.'"!@#$%^&*()′°+=\[\]{}|\\/<>:;_]/g, "_")
+      .replace(/[,.'"!@#$%^&*()′″°+=\[\]{}|\\/<>:;_\s]/g, "_")
       .replace(/_+/g, "_") // Replace multiple underscores with single
       .replace(/^_|_$/g, ""); // Remove leading/trailing underscores
   };
+
+  const renderMermaidStateDiagram = (relationships: Relationship[]): string => {
+    let mermaidCode = "stateDiagram\n"; // or "graph LR" based on your diagram type
+
+    relationships.forEach((rel, index) => {
+      const { entity1, entity2, description } = rel;
+      const safeEntity1 = sanitizeMermaidText(entity1);
+      const safeEntity2 = sanitizeMermaidText(entity2);
+      const safeDescription = sanitizeMermaidText(description);
+
+      const classOne = `entityOne_${index}`;
+      const classTwo = `entityTwo_${index}`;
+
+      mermaidCode += `    classDef ${classOne} fill\n`;
+      mermaidCode += `    classDef ${classTwo} fill\n`;
+      mermaidCode += `    ${safeEntity1}: ${entity1}\n`;
+      mermaidCode += `    ${safeEntity2}: ${entity2}\n`;
+      mermaidCode += `    ${safeEntity1}:::${classOne}\n`;
+      mermaidCode += `    ${safeEntity2}:::${classTwo}\n`;
+      mermaidCode += `    ${safeEntity1} -->|${safeDescription}| ${safeEntity2}\n`;
+    });
+
+    console.log("Mermaid code:", mermaidCode);
+    return mermaidCode;
+  };
+
 
   const renderMermaidDiagram = (relationships: Relationship[]): string => {
     let mermaidCode = "graph LR\n";
@@ -109,7 +135,9 @@ function SidePanel() {
       const safeEntity1 = sanitizeMermaidText(entity1);
       const safeEntity2 = sanitizeMermaidText(entity2);
       const safeDescription = sanitizeMermaidText(description);
-      mermaidCode += `    ${safeEntity1} -->|${safeDescription}| ${safeEntity2}\n`;
+      mermaidCode += `    ${safeEntity1}[${entity1}] -->|${safeDescription}| ${safeEntity2}[${entity2}]\n`;
+
+      //mermaidCode += `    ${safeEntity1} -->|${safeDescription}| ${safeEntity2}\n`;
     });
     return mermaidCode;
   };
@@ -225,19 +253,20 @@ function SidePanel() {
   );
 
   const handleDiagramNodeClick = (entity: string) => {
+    console.log("Diagram node clicked:", entity);
     handleEntityClick(entity);
   };
 
   return (
     <div className="p-4">
-      <h2 className="text-2xl font-bold py-4">Docagram 3</h2>
+      <h2 className="text-2xl font-bold py-4">Docagram</h2>
       <div
         className="text-white text-xl p-4 mb-4 bg-blue-600 shadow-md rounded-md cursor-pointer"
         onClick={() => {
           analyzePageContent();
         }}
       >
-        Analyze Page Content
+        Visualize
       </div>
       {error && (
         <div className="text-red-600 p-4 mb-4 border border-red-800 rounded-md">
