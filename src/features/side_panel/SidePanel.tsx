@@ -58,7 +58,12 @@ function SidePanel() {
 
   // Prevent diagram from redrawing if an entity is selected
   useEffect(() => {
-    if (!selectedEntity) {
+    if (selectedEntity) {
+      const entityRelationships =
+        relationshipService.getEntityRelationships(selectedEntity);
+      const mermaidDiagram = renderMermaidDiagram(entityRelationships);
+      setDiagram(mermaidDiagram);
+    } else {
       const mermaidDiagram = renderMermaidDiagram(relationships);
       setDiagram(mermaidDiagram);
     }
@@ -74,9 +79,14 @@ function SidePanel() {
   }, [relationshipService, relationships, minimumEntityCount]);
 
   const handleEntityClick = (entity: string) => {
-    setSelectedEntity(entity);
-    const rels = relationshipService.getEntityRelationships(entity);
-    setRelationships(rels);
+    if (entity === selectedEntity) {
+      setSelectedEntity(null);
+      setRelationships(relationshipService.getRelationships());
+    } else {
+      setSelectedEntity(entity);
+      const rels = relationshipService.getEntityRelationships(entity);
+      setRelationships(rels);
+    }
   };
 
   const handleShowAllRelationships = () => {
@@ -87,7 +97,7 @@ function SidePanel() {
   const sanitizeMermaidText = (text: string): string => {
     return text
       .replace(/[-–—]/g, "") // Remove hyphens and dashes
-      .replace(/[\s,.'"!@#$%^&*()′°+=\[\]{}|\\/<>:;_]/g, "_")
+      .replace(/[,.'"!@#$%^&*()′°+=\[\]{}|\\/<>:;_]/g, "_")
       .replace(/_+/g, "_") // Replace multiple underscores with single
       .replace(/^_|_$/g, ""); // Remove leading/trailing underscores
   };
@@ -104,7 +114,7 @@ function SidePanel() {
     return mermaidCode;
   };
 
-  const MAX_RETRIES = 3;
+  const MAX_RETRIES = 5;
 
   const analyzePageContent = useCallback(
     async (options = { shouldSummarize: true }) => {
@@ -172,6 +182,7 @@ function SidePanel() {
                 error.name === "NotReadableError" ||
                 error.name === "NotSupportedError"
               ) {
+                console.error("Error analyzing chunk:", error);
                 retryCount++;
                 if (retryCount >= MAX_RETRIES) {
                   throw new Error(
@@ -212,6 +223,10 @@ function SidePanel() {
     },
     [aiService]
   );
+
+  const handleDiagramNodeClick = (entity: string) => {
+    handleEntityClick(entity);
+  };
 
   return (
     <div className="p-4">
@@ -268,11 +283,14 @@ function SidePanel() {
               .map((entity) => (
                 <button
                   key={entity.name}
-                  className={`chip-button border rounded-sm px-2 py-1 mr-1 my-1 flex items-center ${
-                    entity.name === selectedEntity
-                      ? "bg-green-500 text-white"
-                      : getShade(entity.count)
-                  } hover:bg-gray-800 hover:text-white`}
+                  className="chip-button border rounded-sm px-2 py-1 mr-1 my-1 flex items-center hover:bg-gray-800 hover:text-white"
+                  style={{
+                    backgroundColor:
+                      entity.name === selectedEntity
+                        ? "green"
+                        : getShade(entity.count),
+                    color: entity.name === selectedEntity ? "white" : "inherit",
+                  }}
                   onClick={() => handleEntityClick(entity.name)}
                 >
                   {entity.name}{" "}
@@ -314,8 +332,12 @@ function SidePanel() {
       </div>
       {tab === "diagram" && (
         <>
-          {diagram && <DiagramComponent diagramDefinition={diagram} />}
-          {/* Entities list can be included here if desired */}
+          {diagram && (
+            <DiagramComponent
+              diagramDefinition={diagram}
+              onNodeClick={handleDiagramNodeClick}
+            />
+          )}
         </>
       )}
       {tab === "relationships" && (

@@ -1,13 +1,17 @@
 // DiagramComponent.tsx
 
-import React, { useEffect, useRef } from 'react';
-import mermaid from 'mermaid';
+import React, { useEffect, useRef } from "react";
+import mermaid from "mermaid";
 
 interface DiagramComponentProps {
   diagramDefinition: string;
+  onNodeClick: (entity: string) => void;
 }
 
-const DiagramComponent: React.FC<DiagramComponentProps> = ({ diagramDefinition }) => {
+const DiagramComponent: React.FC<DiagramComponentProps> = ({
+  diagramDefinition,
+  onNodeClick,
+}) => {
   const diagramRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -17,19 +21,34 @@ const DiagramComponent: React.FC<DiagramComponentProps> = ({ diagramDefinition }
     const renderMermaidDiagram = async () => {
       if (diagramRef.current) {
         try {
-          // Use renderAsync instead of render
-          const { svg } = await mermaid.render('mermaid-diagram', diagramDefinition);
+          // Render the Mermaid diagram
+          const { svg } = await mermaid.render(
+            "mermaid-diagram",
+            diagramDefinition
+          );
           diagramRef.current.innerHTML = svg;
+
+          // Add click listeners to nodes
+          const nodes = diagramRef.current.querySelectorAll("g.node");
+          nodes.forEach((node) => {
+            (node as HTMLElement).style.cursor = "pointer";
+            node.addEventListener("click", () => {
+              const title = node.querySelector("title")?.textContent;
+              if (title) {
+                onNodeClick(title);
+              }
+            });
+          });
         } catch (err) {
-          console.error('Error rendering Mermaid diagram:', err);
+          console.error("Error rendering Mermaid diagram:", err);
         }
       }
     };
 
     renderMermaidDiagram();
-  }, [diagramDefinition]);
+  }, [diagramDefinition, onNodeClick]);
 
-  return <div className='p-2' ref={diagramRef}></div>;
+  return <div className="p-2" ref={diagramRef}></div>;
 };
 
 export default DiagramComponent;
