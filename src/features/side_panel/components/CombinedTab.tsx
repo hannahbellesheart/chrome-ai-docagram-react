@@ -23,7 +23,6 @@ import { tab } from "@testing-library/user-event/dist/tab";
 interface SectionData {
   summary: string;
   relationships: Relationship[];
-  diagram: string;
   message: string;
 }
 
@@ -47,7 +46,6 @@ export default function CombinedTab({
   const [showDiagrams, setShowDiagrams] = useState<boolean>(true);
 
   // Combined Diagram and Entities
-  const [combinedDiagram, setCombinedDiagram] = useState<string | null>(null);
   const [combinedRelationships, setCombinedRelationships] = useState<
     Relationship[]
   >([]);
@@ -75,31 +73,12 @@ export default function CombinedTab({
     };
   }, []);
 
-  const renderMermaidDiagram = (relationships: Relationship[]): string => {
-    let mermaidCode = "graph LR\n";
-    relationships.forEach((rel) => {
-      const { entity1, entity2, description } = rel;
-      const safeEntity1 = sanitizeMermaidText(entity1);
-      const safeEntity2 = sanitizeMermaidText(entity2);
-      const safeDescription = sanitizeMermaidLabel(description);
-      mermaidCode += `    ${safeEntity1}[${sanitizeMermaidLabel(
-        entity1
-      )}] -->|${safeDescription}| ${safeEntity2}[${sanitizeMermaidLabel(
-        entity2
-      )}]\n`;
-      mermaidCode += `    style ${safeEntity1} fill:#0077be,color:#fff\n`;
-      mermaidCode += `    style ${safeEntity2} fill:#0077be,color:#fff\n`;
-    });
-    return mermaidCode;
-  };
-
   const analyzeSummaryAndContent = useCallback(async () => {
     try {
       relationshipService.reset();
       setSections([]);
       setError(null);
       setStatus("Analyzing page content...");
-      setCombinedDiagram(null);
       setCombinedRelationships([]);
       setCombinedEntities([]);
       setSelectedEntity(null);
@@ -141,7 +120,6 @@ export default function CombinedTab({
             const sectionData: SectionData = {
               summary: chunkSummary,
               relationships: sectionRelationships,
-              diagram: renderMermaidDiagram(sectionRelationships),
               message: chunkResult,
             };
 
@@ -185,28 +163,18 @@ export default function CombinedTab({
   const handleEntityClick = (entity: string) => {
     if (entity === selectedEntity) {
       setSelectedEntity(null);
-      // Reset diagram to show all relationships
-      const combinedDiagramDefinition = renderMermaidDiagram(
-        combinedRelationships
-      );
-      setCombinedDiagram(combinedDiagramDefinition);
     } else {
       setSelectedEntity(entity);
       // Filter relationships to those involving the selected entity
       const filteredRelationships = combinedRelationships.filter(
         (rel) => rel.entity1 === entity || rel.entity2 === entity
       );
-      const filteredDiagram = renderMermaidDiagram(filteredRelationships);
-      setCombinedDiagram(filteredDiagram);
+      setCombinedRelationships(filteredRelationships);
     }
   };
 
   const handleShowAllRelationships = () => {
     setSelectedEntity(null);
-    const combinedDiagramDefinition = renderMermaidDiagram(
-      combinedRelationships
-    );
-    setCombinedDiagram(combinedDiagramDefinition);
   };
 
   const deleteEntity = (entity: string) => {
@@ -219,11 +187,6 @@ export default function CombinedTab({
     // Update combinedEntities
     const updatedEntities = combinedEntities.filter((e) => e.name !== entity);
     setCombinedEntities(updatedEntities);
-
-    // Update diagram
-    const combinedDiagramDefinition =
-      renderMermaidDiagram(updatedRelationships);
-    setCombinedDiagram(combinedDiagramDefinition);
 
     // If the deleted entity was selected, reset selection
     if (selectedEntity === entity) {
@@ -242,8 +205,6 @@ export default function CombinedTab({
       (section) => section.relationships
     );
     // Generate mermaid diagram
-    const combinedDiagramDefinition = renderMermaidDiagram(allRelationships);
-    setCombinedDiagram(combinedDiagramDefinition);
     setCombinedRelationships(allRelationships);
 
     // Collect entities and their counts
@@ -323,7 +284,7 @@ export default function CombinedTab({
         <div className="space-y-6 pt-6">
           <SystemStatus status={status} error={error} />
 
-          {combinedDiagram && (
+          {combinedRelationships && combinedRelationships.length > 0 && (
             <Card className="mb-6">
               <CardContent>
                 <Tabs
@@ -347,7 +308,7 @@ export default function CombinedTab({
                   </div>
                   <TabsContent value="diagram">
                     <DiagramComponent
-                      diagramDefinition={combinedDiagram}
+                      relationships={combinedRelationships}
                       onNodeClick={handleDiagramNodeClick}
                     />
                   </TabsContent>
@@ -386,7 +347,7 @@ export default function CombinedTab({
 
                 {showDiagrams && (
                   <DiagramComponent
-                    diagramDefinition={section.diagram}
+                    relationships={section.relationships}
                     onNodeClick={handleNodeClick}
                   />
                 )}

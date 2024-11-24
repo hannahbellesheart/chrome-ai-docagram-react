@@ -1,21 +1,47 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import mermaid from "mermaid";
+import { Relationship } from "../types/relationship";
+import {
+  sanitizeMermaidText,
+  sanitizeMermaidLabel,
+} from "../utils/diagram_utils";
 
 interface DiagramComponentProps {
-  diagramDefinition: string;
+  relationships: Relationship[];
   onNodeClick?: (entity: string) => void;
 }
 
 const DiagramComponent: React.FC<DiagramComponentProps> = ({
-  diagramDefinition,
+  relationships,
   onNodeClick,
 }) => {
+  const [diagramDefinition, setDiagramDefinition] = useState<string>("");
+
   const diagramRef = useRef<HTMLDivElement>(null);
+
+  const renderMermaidDiagram = (relationships: Relationship[]): string => {
+    let mermaidCode = "graph LR\n";
+    relationships.forEach((rel) => {
+      const { entity1, entity2, description } = rel;
+      const safeEntity1 = sanitizeMermaidText(entity1);
+      const safeEntity2 = sanitizeMermaidText(entity2);
+      const safeDescription = sanitizeMermaidLabel(description);
+      mermaidCode += `    ${safeEntity1}[${sanitizeMermaidLabel(
+        entity1
+      )}] -->|${safeDescription}| ${safeEntity2}[${sanitizeMermaidLabel(
+        entity2
+      )}]\n`;
+      mermaidCode += `    style ${safeEntity1} fill:#0077be,color:#fff\n`;
+      mermaidCode += `    style ${safeEntity2} fill:#0077be,color:#fff\n`;
+    });
+    return mermaidCode;
+  };
 
   useEffect(() => {
     // Initialize Mermaid only once
     mermaid.initialize({ startOnLoad: false });
-  }, []);
+    setDiagramDefinition(renderMermaidDiagram(relationships));
+  }, [relationships]);
 
   useEffect(() => {
     const renderMermaidDiagram = async () => {
@@ -77,6 +103,10 @@ const DiagramComponent: React.FC<DiagramComponentProps> = ({
 
     renderMermaidDiagram();
   }, [diagramDefinition, onNodeClick]);
+
+  if (!diagramDefinition) {
+    return null;
+  }
 
   return (
     <div className="p-2 transition-opacity duration-300" ref={diagramRef}></div>
