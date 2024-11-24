@@ -1,15 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { AIService, SessionStats } from "../shared/services/ai_service";
-import AIDetails from "./components/AIDetails";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SummarizeTab } from "./components/SummarizeTab";
-import { VisualizeTab } from "./components/VisualizeTab";
+import { AIService } from "../shared/services/ai_service";
 import CombinedTab from "./components/CombinedTab";
+import { RelationshipService } from "../shared/services/relationship_service";
 
 function SidePanel() {
   const [loading, setLoading] = useState<boolean>(false);
-  const [loadingMessage, setLoadingMessage] = useState<string>("");
-  const [stats, setStats] = useState<SessionStats | null>(null);
   const [supportInfo, setSupportInfo] = useState<{
     hasLanguageModel: boolean;
     hasSummarizer: boolean;
@@ -19,6 +14,9 @@ function SidePanel() {
 
   const aiServiceRef = useRef(new AIService());
   const aiService = aiServiceRef.current;
+
+  const relationshipServiceRef = useRef(new RelationshipService());
+  const relationshipService = relationshipServiceRef.current;
 
   useEffect(() => {
     const initializeAI = async () => {
@@ -39,31 +37,15 @@ function SidePanel() {
     return () => {
       aiService.destroy();
     };
-  }, []); // aiService doesn't need to be in dependencies
+  }, []);
 
   return (
-    <div className="p-4 space-y-4">
-      <h2 className="text-2xl font-bold">Docagram 3</h2>
-
-      <Tabs defaultValue="visualize" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="visualize">Visualize</TabsTrigger>
-          <TabsTrigger value="summarize">Summarize</TabsTrigger>
-          <TabsTrigger value="combined">Combined</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="visualize">
-          <VisualizeTab loading={loading} aiService={aiService} />
-        </TabsContent>
-
-        <TabsContent value="summarize">
-          <SummarizeTab loading={loading} aiService={aiService} />
-        </TabsContent>
-
-        <TabsContent value="combined">
-          <CombinedTab loading={loading} aiService={aiService} />
-        </TabsContent>
-      </Tabs>
+    <div className="p-4 space-y-4 w-full">
+      <CombinedTab
+        loading={loading}
+        aiService={aiService}
+        relationshipService={relationshipService}
+      />
 
       {/* <div className="mt-8">
         <AIDetails stats={stats} supportInfo={supportInfo} />

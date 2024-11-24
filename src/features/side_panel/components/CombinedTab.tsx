@@ -1,18 +1,24 @@
+// CombinedTab.tsx
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SystemStatus } from "./SystemStatus";
 import { Relationship } from "../types/relationship";
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { RelationshipService } from "@/features/shared/services/relationship_service";
 import { ContentService } from "@/features/shared/services/content_service";
-import { DiagramView } from "./DiagramView";
 import DiagramComponent from "./DiagramComponent";
 import Markdown from "react-markdown";
 import {
   sanitizeMermaidLabel,
   sanitizeMermaidText,
 } from "../utils/diagram_utils";
+import { AIService } from "@/features/shared/services/ai_service";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { EntityList } from "./EntityList";
+import { tab } from "@testing-library/user-event/dist/tab";
 
 interface SectionData {
   summary: string;
@@ -23,23 +29,37 @@ interface SectionData {
 
 interface CombinedTabProps {
   loading: boolean;
-  aiService: any; // Replace with proper type
+  aiService: AIService;
+  relationshipService: RelationshipService;
 }
 
-export default function CombinedTab({ loading, aiService }: CombinedTabProps) {
+export default function CombinedTab({
+  loading,
+  aiService,
+  relationshipService,
+}: CombinedTabProps) {
   const [sections, setSections] = useState<SectionData[]>([]);
   const [status, setStatus] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
-  const [activeEntity, setActiveEntity] = useState<string | null>(null);
 
+  // Controls
+  const [showSummaries, setShowSummaries] = useState<boolean>(true);
+  const [showDiagrams, setShowDiagrams] = useState<boolean>(true);
+
+  // Combined Diagram and Entities
+  const [combinedDiagram, setCombinedDiagram] = useState<string | null>(null);
+  const [combinedRelationships, setCombinedRelationships] = useState<
+    Relationship[]
+  >([]);
+  const [combinedEntities, setCombinedEntities] = useState<
+    { name: string; count: number }[]
+  >([]);
+  const [selectedCombinedTab, setSelectedCombinedTab] =
+    useState<string>("diagram");
+
+  // Entity interactions
   const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
-  const [entities, setEntities] = useState<{ name: string; count: number }[]>(
-    []
-  );
-  const [minimumEntityCount, setMinimumEntityCount] = useState<number>(2);
-
-  const relationshipServiceRef = useRef(new RelationshipService());
-  const relationshipService = relationshipServiceRef.current;
+  const [minimumEntityCount, setMinimumEntityCount] = useState<number>(1);
 
   useEffect(() => {
     // Cleanup highlights when component unmounts
@@ -61,7 +81,7 @@ export default function CombinedTab({ loading, aiService }: CombinedTabProps) {
       const { entity1, entity2, description } = rel;
       const safeEntity1 = sanitizeMermaidText(entity1);
       const safeEntity2 = sanitizeMermaidText(entity2);
-      const safeDescription = sanitizeMermaidText(description);
+      const safeDescription = sanitizeMermaidLabel(description);
       mermaidCode += `    ${safeEntity1}[${sanitizeMermaidLabel(
         entity1
       )}] -->|${safeDescription}| ${safeEntity2}[${sanitizeMermaidLabel(
@@ -79,6 +99,10 @@ export default function CombinedTab({ loading, aiService }: CombinedTabProps) {
       setSections([]);
       setError(null);
       setStatus("Analyzing page content...");
+      setCombinedDiagram(null);
+      setCombinedRelationships([]);
+      setCombinedEntities([]);
+      setSelectedEntity(null);
 
       const pageContent = await ContentService.getPageContent();
       const chunks = await ContentService.splitIntoChunks(pageContent);
@@ -147,12 +171,10 @@ export default function CombinedTab({ loading, aiService }: CombinedTabProps) {
         currentWindow: true,
       });
 
-      console.log("tab", tab);
       if (tab.id) {
-        setActiveEntity(entity === activeEntity ? null : entity);
         await chrome.tabs.sendMessage(tab.id, {
           action: "highlight",
-          entity: entity === activeEntity ? "" : entity,
+          entity: entity === selectedEntity ? "" : entity,
         });
       }
     } catch (error) {
@@ -160,38 +182,218 @@ export default function CombinedTab({ loading, aiService }: CombinedTabProps) {
     }
   };
 
+  const handleEntityClick = (entity: string) => {
+    if (entity === selectedEntity) {
+      setSelectedEntity(null);
+      // Reset diagram to show all relationships
+      const combinedDiagramDefinition = renderMermaidDiagram(
+        combinedRelationships
+      );
+      setCombinedDiagram(combinedDiagramDefinition);
+    } else {
+      setSelectedEntity(entity);
+      // Filter relationships to those involving the selected entity
+      const filteredRelationships = combinedRelationships.filter(
+        (rel) => rel.entity1 === entity || rel.entity2 === entity
+      );
+      const filteredDiagram = renderMermaidDiagram(filteredRelationships);
+      setCombinedDiagram(filteredDiagram);
+    }
+  };
+
+  const handleShowAllRelationships = () => {
+    setSelectedEntity(null);
+    const combinedDiagramDefinition = renderMermaidDiagram(
+      combinedRelationships
+    );
+    setCombinedDiagram(combinedDiagramDefinition);
+  };
+
+  const deleteEntity = (entity: string) => {
+    // Remove entity from combinedRelationships
+    const updatedRelationships = combinedRelationships.filter(
+      (rel) => rel.entity1 !== entity && rel.entity2 !== entity
+    );
+    setCombinedRelationships(updatedRelationships);
+
+    // Update combinedEntities
+    const updatedEntities = combinedEntities.filter((e) => e.name !== entity);
+    setCombinedEntities(updatedEntities);
+
+    // Update diagram
+    const combinedDiagramDefinition =
+      renderMermaidDiagram(updatedRelationships);
+    setCombinedDiagram(combinedDiagramDefinition);
+
+    // If the deleted entity was selected, reset selection
+    if (selectedEntity === entity) {
+      setSelectedEntity(null);
+    }
+  };
+
+  const handleDiagramNodeClick = (entity: string) => {
+    handleNodeClick(entity);
+    handleEntityClick(entity);
+  };
+
+  const combineAllDiagrams = () => {
+    // Collect all relationships from all sections
+    const allRelationships = sections.flatMap(
+      (section) => section.relationships
+    );
+    // Generate mermaid diagram
+    const combinedDiagramDefinition = renderMermaidDiagram(allRelationships);
+    setCombinedDiagram(combinedDiagramDefinition);
+    setCombinedRelationships(allRelationships);
+
+    // Collect entities and their counts
+    const entityCounts = new Map<string, number>();
+    allRelationships.forEach((rel) => {
+      entityCounts.set(rel.entity1, (entityCounts.get(rel.entity1) || 0) + 1);
+      entityCounts.set(rel.entity2, (entityCounts.get(rel.entity2) || 0) + 1);
+    });
+    const entities = Array.from(entityCounts.entries()).map(
+      ([name, count]) => ({
+        name,
+        count,
+      })
+    );
+    setCombinedEntities(entities);
+  };
+
   return (
     <Card className="w-full">
-      <CardContent className="space-y-6 pt-6">
-        <Button
-          onClick={analyzeSummaryAndContent}
-          disabled={loading}
-          className="mb-4"
+      <CardContent className="pt-0">
+        {/* Sticky Header */}
+        <div
+          className="sticky top-0 bg-white z-10 border-b"
+          style={{ borderBottom: "1px solid #e5e7eb" }}
         >
-          Analyze & Visualize
-        </Button>
+          <div className="flex flex-wrap items-center gap-2 p-2 md:p-4">
+            <Button
+              onClick={analyzeSummaryAndContent}
+              disabled={loading}
+              className="mr-4"
+            >
+              Analyze
+            </Button>
+            <Button
+              className="block md:hidden"
+              onClick={combineAllDiagrams}
+              disabled={sections.length === 0}
+              variant="outline"
+            >
+              Combine All Diagrams
+            </Button>
 
-        <SystemStatus status={status} error={error} />
-
-        {sections.map((section, index) => (
-          <Card key={index} className="mb-6">
-            <CardContent className="space-y-4">
-              <h2 className="text-xl font-bold pt-4">Section {index + 1}</h2>
-
-              <div className="bg-muted rounded-lg p-4">
-                <h3 className="text-lg font-semibold mb-2">Summary</h3>
-                <p className="text-sm text-muted-foreground whitespace-pre-line">
-                  <Markdown>{section.summary}</Markdown>
-                </p>
+            <div className="flex items-center flex-wrap gap-2">
+              <div className="flex items-center">
+                <Switch
+                  id="show-summaries"
+                  checked={showSummaries}
+                  onCheckedChange={setShowSummaries}
+                />
+                <Label htmlFor="show-summaries" className="ml-2 mr-4">
+                  Show Summaries
+                </Label>
               </div>
+              <div className="flex items-center">
+                <Switch
+                  id="show-diagrams"
+                  checked={showDiagrams}
+                  onCheckedChange={setShowDiagrams}
+                />
+                <Label htmlFor="show-diagrams" className="ml-2 mr-4">
+                  Show Diagrams
+                </Label>
+              </div>
+              <Button
+                className="hidden md:block"
+                onClick={combineAllDiagrams}
+                disabled={sections.length === 0}
+                variant="outline"
+              >
+                Combine All Diagrams
+              </Button>
+            </div>
+          </div>
+        </div>
 
-              <DiagramComponent
-                diagramDefinition={section.diagram}
-                onNodeClick={handleNodeClick}
-              />
-            </CardContent>
-          </Card>
-        ))}
+        {/* Main Content */}
+        <div className="space-y-6 pt-6">
+          <SystemStatus status={status} error={error} />
+
+          {combinedDiagram && (
+            <Card className="mb-6">
+              <CardContent>
+                <Tabs
+                  value={selectedCombinedTab}
+                  onValueChange={setSelectedCombinedTab}
+                >
+                  <div className="flex gap-8 pt-4">
+                    <h2 className="text-xl font-bold">Combined Diagram</h2>
+                    <TabsList>
+                      <TabsTrigger value="diagram">Diagram</TabsTrigger>
+                      <TabsTrigger value="entities">Entities</TabsTrigger>
+                    </TabsList>
+                    {selectedEntity && (
+                      <Button
+                        variant={"outline"}
+                        onClick={handleShowAllRelationships}
+                      >
+                        Show All
+                      </Button>
+                    )}
+                  </div>
+                  <TabsContent value="diagram">
+                    <DiagramComponent
+                      diagramDefinition={combinedDiagram}
+                      onNodeClick={handleDiagramNodeClick}
+                    />
+                  </TabsContent>
+                  <TabsContent value="entities">
+                    <EntityList
+                      entities={combinedEntities}
+                      minimumEntityCount={minimumEntityCount}
+                      setMinimumEntityCount={setMinimumEntityCount}
+                      selectedEntity={selectedEntity}
+                      handleShowAllRelationships={handleShowAllRelationships}
+                      handleEntityClick={(entity) => {
+                        handleEntityClick(entity);
+                        setSelectedCombinedTab("diagram");
+                      }}
+                      deleteEntity={deleteEntity}
+                    />
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          )}
+
+          {sections.map((section, index) => (
+            <Card key={index} className="mb-6">
+              <CardContent className="space-y-4">
+                <h2 className="text-xl font-bold pt-4">Section {index + 1}</h2>
+
+                {showSummaries && (
+                  <div className="bg-muted rounded-lg p-4">
+                    <h3 className="text-lg font-semibold mb-2">Summary</h3>
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">
+                      <Markdown>{section.summary}</Markdown>
+                    </p>
+                  </div>
+                )}
+
+                {showDiagrams && (
+                  <DiagramComponent
+                    diagramDefinition={section.diagram}
+                    onNodeClick={handleNodeClick}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );

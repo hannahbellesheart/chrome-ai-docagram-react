@@ -14,14 +14,18 @@ import {
   sanitizeMermaidLabel,
   sanitizeMermaidText,
 } from "../utils/diagram_utils";
-import { dir } from "node:console";
 
 interface VisualizeTabProps {
   loading: boolean;
   aiService: AIService;
+  relationshipService: RelationshipService;
 }
 
-export function VisualizeTab({ loading, aiService }: VisualizeTabProps) {
+export function VisualizeTab({
+  loading,
+  aiService,
+  relationshipService,
+}: VisualizeTabProps) {
   const [tab, setTab] = useState<"diagram" | "relationships">("diagram");
   const [direction, setDirection] = useState<"LR" | "RL" | "TD" | "BT">("LR");
   const [message, setMessage] = useState<string>("");
@@ -34,9 +38,6 @@ export function VisualizeTab({ loading, aiService }: VisualizeTabProps) {
   );
   const [minimumEntityCount, setMinimumEntityCount] = useState<number>(2);
   const [relationships, setRelationships] = useState<Relationship[]>([]);
-
-  const relationshipServiceRef = useRef(new RelationshipService());
-  const relationshipService = relationshipServiceRef.current;
 
   // Prevent diagram from redrawing if an entity is selected
   useEffect(() => {
@@ -130,6 +131,10 @@ export function VisualizeTab({ loading, aiService }: VisualizeTabProps) {
     async (options = { shouldSummarize: true }) => {
       try {
         relationshipService.reset();
+        setError(null);
+        setEntities([]);
+        setRelationships([]);
+        setSelectedEntity(null);
         setDiagram("");
         setError(null);
         setStatus("Analyzing page content...");
@@ -272,17 +277,33 @@ export function VisualizeTab({ loading, aiService }: VisualizeTabProps) {
   return (
     <Card>
       <CardContent className="space-y-4 pt-6">
-        <div className="flex gap-4">
+        <div className="flex flex-col md:flex-row gap-4">
           <Button
             onClick={() => analyzePageContent({ shouldSummarize: false })}
             disabled={loading}
           >
             Generate Diagram
           </Button>
-          <DirectionSelector
-            direction={direction}
-            onDirectionChange={setDirection}
-          />
+          <div className="flex flex-row gap-4">
+            <DirectionSelector
+              direction={direction}
+              onDirectionChange={setDirection}
+            />
+            <div className="flex items-center">
+              <label htmlFor="min-entity-count" className="mr-2 text-sm">
+                Min Count:
+              </label>
+              <input
+                type="number"
+                id="min-entity-count"
+                min="1"
+                value={minimumEntityCount}
+                onChange={(e) => setMinimumEntityCount(Number(e.target.value))}
+                className="w-20 p-1 border rounded"
+                placeholder="2"
+              />
+            </div>
+          </div>
         </div>
         <SystemStatus status={status} error={error} />
         {entities.length > 0 && (
@@ -292,7 +313,7 @@ export function VisualizeTab({ loading, aiService }: VisualizeTabProps) {
             setMinimumEntityCount={setMinimumEntityCount}
             selectedEntity={selectedEntity}
             handleShowAllRelationships={handleShowAllRelationships}
-            handleEntityClick={(value)=>{
+            handleEntityClick={(value) => {
               handleNodeClick(value);
               handleEntityClick(value);
             }}

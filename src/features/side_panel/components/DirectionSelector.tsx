@@ -10,9 +10,6 @@ interface DirectionSelectorProps {
 export default function DirectionSelector({ direction, onDirectionChange }: DirectionSelectorProps) {
   return (
     <div className="flex items-center gap-2">
-      <label htmlFor="direction-select" className="text-sm font-medium">
-        Layout Direction:
-      </label>
       <Select 
         value={direction} 
         onValueChange={onDirectionChange}
