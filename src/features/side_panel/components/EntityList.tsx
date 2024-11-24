@@ -8,6 +8,7 @@ interface EntityListProps {
   selectedEntity: string | null;
   handleShowAllRelationships: () => void;
   handleEntityClick: (entity: string) => void;
+  deleteEntity: (entity: string) => void;
 }
 
 export function EntityList({
@@ -17,7 +18,22 @@ export function EntityList({
   selectedEntity,
   handleShowAllRelationships,
   handleEntityClick,
+  deleteEntity,
 }: EntityListProps) {
+
+  const handleEntityRightClick = (
+    e: React.MouseEvent,
+    entityName: string
+  ) => {
+    e.preventDefault();
+    const confirmDelete = window.confirm(
+      `Delete ${entityName} and its relationships?`
+    );
+    if (confirmDelete) {
+      deleteEntity(entityName);
+    }
+  };
+
   return (
     <div className="entities-list">
       <div className="flex flex-row gap-4 items-center">
@@ -55,6 +71,8 @@ export function EntityList({
                 color: entity.name === selectedEntity ? "white" : "inherit",
               }}
               onClick={() => handleEntityClick(entity.name)}
+              onContextMenu={(e) => handleEntityRightClick(e, entity.name)}
+
             >
               {entity.name} <span className="ml-1 text-sm">({entity.count})</span>
             </button>

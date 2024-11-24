@@ -14,6 +14,7 @@ import {
   sanitizeMermaidLabel,
   sanitizeMermaidText,
 } from "../utils/diagram_utils";
+import { dir } from "node:console";
 
 interface VisualizeTabProps {
   loading: boolean;
@@ -58,6 +59,12 @@ export function VisualizeTab({ loading, aiService }: VisualizeTabProps) {
 
     setEntities(entityList);
   }, [relationshipService, relationships, minimumEntityCount]);
+
+  useEffect(() => {
+    // Redraw diagram when direction changes
+    const mermaidDiagram = renderMermaidDiagram(relationships);
+    setDiagram(mermaidDiagram);
+  }, [direction]);
 
   const handleEntityClick = (entity: string) => {
     if (entity === selectedEntity) {
@@ -227,6 +234,15 @@ export function VisualizeTab({ loading, aiService }: VisualizeTabProps) {
     [aiService]
   );
 
+  const deleteEntity = (entityName: string) => {
+    // Remove entity from relationshipService
+    relationshipService.deleteEntity(entityName);
+
+    // Update relationships from relationshipService
+    setRelationships(relationshipService.getRelationships());
+    setSelectedEntity(null);
+  };
+
   const handleNodeClick = async (entity: string) => {
     try {
       const [tab] = await chrome.tabs.query({
@@ -276,7 +292,11 @@ export function VisualizeTab({ loading, aiService }: VisualizeTabProps) {
             setMinimumEntityCount={setMinimumEntityCount}
             selectedEntity={selectedEntity}
             handleShowAllRelationships={handleShowAllRelationships}
-            handleEntityClick={handleEntityClick}
+            handleEntityClick={(value)=>{
+              handleNodeClick(value);
+              handleEntityClick(value);
+            }}
+            deleteEntity={deleteEntity}
           />
         )}
         <DiagramView

@@ -70,6 +70,7 @@ const DiagramComponent: React.FC<DiagramComponentProps> = ({
           });
         } catch (err) {
           console.error("Error rendering Mermaid diagram:", err);
+          console.log("Diagram definition:", diagramDefinition);
         }
       }
     };

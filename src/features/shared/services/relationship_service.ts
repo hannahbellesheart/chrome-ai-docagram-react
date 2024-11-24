@@ -197,4 +197,12 @@ export class RelationshipService {
   getEntityCount(entity: string): number {
     return this.uniqueEntityCount.get(entity) || 0;
   }
+
+  deleteEntity(entity: string): void {
+    this.relationships = this.relationships.filter(
+      (rel) => rel.entity1 !== entity && rel.entity2 !== entity
+    );
+    this.uniqueEntities.delete(entity);
+    this.uniqueEntityCount.delete(entity);
+  }
 }
