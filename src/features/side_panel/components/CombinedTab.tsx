@@ -9,6 +9,10 @@ import { ContentService } from "@/features/shared/services/content_service";
 import { DiagramView } from "./DiagramView";
 import DiagramComponent from "./DiagramComponent";
 import Markdown from "react-markdown";
+import {
+  sanitizeMermaidLabel,
+  sanitizeMermaidText,
+} from "../utils/diagram_utils";
 
 interface SectionData {
   summary: string;
@@ -42,20 +46,14 @@ export default function CombinedTab({ loading, aiService }: CombinedTabProps) {
     return () => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs[0].id) {
-          chrome.tabs.sendMessage(tabs[0].id, { action: "highlight", entity: '' });
+          chrome.tabs.sendMessage(tabs[0].id, {
+            action: "highlight",
+            entity: "",
+          });
         }
       });
     };
   }, []);
-  
-  const sanitizeMermaidText = (text: string): string => {
-    return text
-      .replace(/[-–—]/g, "")
-      .replace(/[,.'"!@#$%^&*()+=\[\]{}|\\/<>:;_\s]/g, "_")
-      .replace(/_+/g, "_")
-      .replace(/^_|_$/g, "")
-      .trim();
-  };
 
   const renderMermaidDiagram = (relationships: Relationship[]): string => {
     let mermaidCode = "graph LR\n";
@@ -64,7 +62,11 @@ export default function CombinedTab({ loading, aiService }: CombinedTabProps) {
       const safeEntity1 = sanitizeMermaidText(entity1);
       const safeEntity2 = sanitizeMermaidText(entity2);
       const safeDescription = sanitizeMermaidText(description);
-      mermaidCode += `    ${safeEntity1}[${entity1.trim()}] -->|${safeDescription}| ${safeEntity2}[${entity2.trim()}]\n`;
+      mermaidCode += `    ${safeEntity1}[${sanitizeMermaidLabel(
+        entity1
+      )}] -->|${safeDescription}| ${safeEntity2}[${sanitizeMermaidLabel(
+        entity2
+      )}]\n`;
       mermaidCode += `    style ${safeEntity1} fill:#0077be,color:#fff\n`;
       mermaidCode += `    style ${safeEntity2} fill:#0077be,color:#fff\n`;
     });
@@ -140,16 +142,21 @@ export default function CombinedTab({ loading, aiService }: CombinedTabProps) {
 
   const handleNodeClick = async (entity: string) => {
     try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+
+      console.log("tab", tab);
       if (tab.id) {
         setActiveEntity(entity === activeEntity ? null : entity);
-        await chrome.tabs.sendMessage(tab.id, { 
-          action: "highlight", 
-          entity: entity === activeEntity ? '' : entity 
+        await chrome.tabs.sendMessage(tab.id, {
+          action: "highlight",
+          entity: entity === activeEntity ? "" : entity,
         });
       }
     } catch (error) {
-      console.error('Failed to send highlight message:', error);
+      console.error("Failed to send highlight message:", error);
     }
   };
 

@@ -1,1 +1,1 @@
-chrome.runtime.onInstalled.addListener(()=>{chrome.sidePanel.setPanelBehavior({openPanelOnActionClick:!0})});chrome.commands.onCommand.addListener(e=>{console.log("Reloading extension..."),e.includes("+M")&&chrome.runtime.reload()});
+chrome.runtime.onInstalled.addListener(()=>{chrome.sidePanel.setPanelBehavior({openPanelOnActionClick:!0})});

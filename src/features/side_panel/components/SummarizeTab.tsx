@@ -5,21 +5,19 @@ import { AIOutput } from "./AIOutput";
 import { ContentService } from "@/features/shared/services/content_service";
 import { useCallback, useState } from "react";
 import { AIService } from "@/features/shared/services/ai_service";
+import Markdown from "react-markdown";
 
 interface SummarizeTabProps {
   loading: boolean;
   aiService: AIService;
 }
 
-export function SummarizeTab({
-  loading,
-  aiService,
-}: SummarizeTabProps) {
+export function SummarizeTab({ loading, aiService }: SummarizeTabProps) {
   const [message, setMessage] = useState<string>("");
   const [status, setStatus] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<string>("");
-  
+
   const summarizePageContent = useCallback(async () => {
     try {
       setError(null);
@@ -27,7 +25,7 @@ export function SummarizeTab({
 
       const pageContent = await ContentService.getPageContent();
 
-      const chunks = ContentService.splitIntoChunks(pageContent, 5000);
+      const chunks = await ContentService.splitIntoChunks(pageContent);
 
       let combinedSummary = "";
 
@@ -57,7 +55,7 @@ export function SummarizeTab({
           <Card>
             <CardContent className="pt-6">
               <h3 className="text-lg font-bold mb-2">Summary</h3>
-              <p className="text-sm text-muted-foreground">{summary}</p>
+              <Markdown>{summary}</Markdown>
             </CardContent>
           </Card>
         )}

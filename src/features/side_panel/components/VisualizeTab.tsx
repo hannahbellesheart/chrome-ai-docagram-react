@@ -10,6 +10,10 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { RelationshipService } from "@/features/shared/services/relationship_service";
 import { AIService } from "@/features/shared/services/ai_service";
 import DirectionSelector from "./DirectionSelector";
+import {
+  sanitizeMermaidLabel,
+  sanitizeMermaidText,
+} from "../utils/diagram_utils";
 
 interface VisualizeTabProps {
   loading: boolean;
@@ -71,15 +75,6 @@ export function VisualizeTab({ loading, aiService }: VisualizeTabProps) {
     setRelationships(relationshipService.getRelationships());
   };
 
-  const sanitizeMermaidText = (text: string): string => {
-    return text
-      .replace(/[-–—]/g, "") // Remove hyphens and dashes
-      .replace(/[,.'"!@#$%^&*()′″°+=\[\]{}|\\/<>:;_\s]/g, "_")
-      .replace(/_+/g, "_") // Replace multiple underscores with single
-      .replace(/^_|_$/g, "")
-      .trim(); // Remove leading/trailing underscores
-  };
-
   const renderMermaidStateDiagram = (relationships: Relationship[]): string => {
     let mermaidCode = "stateDiagram\n"; // or "graph LR" based on your diagram type
 
@@ -94,8 +89,8 @@ export function VisualizeTab({ loading, aiService }: VisualizeTabProps) {
 
       mermaidCode += `    classDef ${classOne} fill\n`;
       mermaidCode += `    classDef ${classTwo} fill\n`;
-      mermaidCode += `    ${safeEntity1}: ${entity1.replace('’', '\'')}\n`;
-      mermaidCode += `    ${safeEntity2}: ${entity2.replace('’', '\'')}\n`;
+      mermaidCode += `    ${safeEntity1}: ${entity1.replace("’", "'")}\n`;
+      mermaidCode += `    ${safeEntity2}: ${entity2.replace("’", "'")}\n`;
       mermaidCode += `    ${safeEntity1}:::${classOne}\n`;
       mermaidCode += `    ${safeEntity2}:::${classTwo}\n`;
       mermaidCode += `    ${safeEntity1} -->|${safeDescription}| ${safeEntity2}\n`;
@@ -112,7 +107,11 @@ export function VisualizeTab({ loading, aiService }: VisualizeTabProps) {
       const safeEntity1 = sanitizeMermaidText(entity1);
       const safeEntity2 = sanitizeMermaidText(entity2);
       const safeDescription = sanitizeMermaidText(description);
-      mermaidCode += `    ${safeEntity1}[${entity1.trim()}] -->|${safeDescription}| ${safeEntity2}[${entity2.trim()}]\n`;
+      mermaidCode += `    ${safeEntity1}[${sanitizeMermaidLabel(
+        entity1
+      )}] -->|${safeDescription}| ${safeEntity2}[${sanitizeMermaidLabel(
+        entity2
+      )}]\n`;
       mermaidCode += `    style ${safeEntity1} fill:#0077be,color:#fff\n`;
     });
     return mermaidCode;
@@ -228,10 +227,32 @@ export function VisualizeTab({ loading, aiService }: VisualizeTabProps) {
     [aiService]
   );
 
+  const handleNodeClick = async (entity: string) => {
+    try {
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+
+      console.log("tab", tab);
+      if (tab.id) {
+        setSelectedEntity(entity === selectedEntity ? null : entity);
+        await chrome.tabs.sendMessage(tab.id, {
+          action: "highlight",
+          entity: entity === selectedEntity ? "" : entity,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to send highlight message:", error);
+    }
+  };
+
   const handleDiagramNodeClick = (entity: string) => {
     console.log("Diagram node clicked:", entity);
+    handleNodeClick(entity);
     handleEntityClick(entity);
   };
+
   return (
     <Card>
       <CardContent className="space-y-4 pt-6">
@@ -259,8 +280,6 @@ export function VisualizeTab({ loading, aiService }: VisualizeTabProps) {
           />
         )}
         <DiagramView
-          tab={tab}
-          setTab={setTab}
           diagram={diagram}
           relationships={relationships}
           handleDiagramNodeClick={handleDiagramNodeClick}

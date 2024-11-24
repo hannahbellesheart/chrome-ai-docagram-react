@@ -65,9 +65,9 @@ function SidePanel() {
         </TabsContent>
       </Tabs>
 
-      <div className="mt-8">
+      {/* <div className="mt-8">
         <AIDetails stats={stats} supportInfo={supportInfo} />
-      </div>
+      </div> */}
     </div>
   );
 }

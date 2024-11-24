@@ -1,10 +1,10 @@
-const m=e=>{const o=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),t=document.createElement("span");t.className="docagram-highlight";let a;const d=[];for(;a=o.nextNode();)d.push(a);d.forEach(n=>{var l;const i=n.textContent||"";if(i.includes(e)){const g=i.split(new RegExp(`(${e})`,"gi")),c=document.createDocumentFragment();g.forEach(r=>{if(r.toLowerCase()===e.toLowerCase()){const h=t.cloneNode();h.textContent=r,c.appendChild(h)}else c.appendChild(document.createTextNode(r))}),(l=n.parentNode)==null||l.replaceChild(c,n)}})},u=()=>{document.querySelectorAll(".docagram-highlight").forEach(e=>{var t;const o=e.textContent||"";(t=e.parentNode)==null||t.replaceChild(document.createTextNode(o),e)})};chrome.runtime.onMessage.addListener((e,o,t)=>(e.action==="highlight"&&(u(),m(e.entity),t({success:!0})),!0));const s=document.createElement("style");s.textContent=`
-    .docagram-highlight {
-      background-color: #fef08a;
-      border-radius: 2px;
-      transition: background-color 0.2s;
-    }
-    .docagram-highlight:hover {
-      background-color: #fde047;
-    }
-  `;document.head.appendChild(s);
+const p=e=>e.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),f=e=>{if(!e)return null;const t=p(e),o=new RegExp(`(${t})`,"gi"),n=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null),h=document.createElement("span");h.className="docagram-highlight";let s;const d=[];for(;s=n.nextNode();)d.push(s);let r=null;return d.forEach(c=>{const g=c.textContent||"";if(o.test(g)){const m=g.split(o),i=document.createDocumentFragment();m.forEach(a=>{if(a.toLowerCase()===e.toLowerCase()){const l=h.cloneNode();l.textContent=a,r||(r=l),i.appendChild(l)}else i.appendChild(document.createTextNode(a))}),c.parentNode&&c.parentNode.replaceChild(i,c)}}),r},C=()=>{document.querySelectorAll(".docagram-highlight").forEach(e=>{const t=e.textContent||"";e.parentNode&&e.parentNode.replaceChild(document.createTextNode(t),e)})};chrome.runtime.onMessage.addListener((e,t,o)=>{if(e.action==="highlight"){console.log("Highlighting",e.entity),C();const n=f(e.entity);n&&n.scrollIntoView({behavior:"smooth",block:"center"}),o({success:!0})}return!0});const u=document.createElement("style");u.textContent=`
+  .docagram-highlight {
+    background-color: #fef08a;
+    border-radius: 2px;
+    transition: background-color 0.2s;
+  }
+  .docagram-highlight:hover {
+    background-color: #fde047;
+  }
+`;document.head.appendChild(u);
