@@ -12,11 +12,10 @@ const RelationshipTile: React.FC<RelationshipTileProps> = ({
     <div className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow duration-200">
       {/* Entities Section */}
       <div className="flex items-center justify-between mb-3">
-        <div className="text-sm font-medium text-gray-800">
+        <div className="flex text-sm font-medium bg-gray-800 text-white rounded-md p-2">
           {relationship.entity1}
         </div>
-        <div className="text-sm text-gray-500">↔️</div>
-        <div className="text-sm font-medium text-gray-800">
+        <div className="flex text-sm font-medium bg-gray-800 text-white rounded-md p-2">
           {relationship.entity2}
         </div>
       </div>

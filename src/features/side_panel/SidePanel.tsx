@@ -99,7 +99,8 @@ function SidePanel() {
       .replace(/[-–—]/g, "") // Remove hyphens and dashes
       .replace(/[,.'"!@#$%^&*()′″°+=\[\]{}|\\/<>:;_\s]/g, "_")
       .replace(/_+/g, "_") // Replace multiple underscores with single
-      .replace(/^_|_$/g, ""); // Remove leading/trailing underscores
+      .replace(/^_|_$/g, "")
+      .trim(); // Remove leading/trailing underscores
   };
 
   const renderMermaidStateDiagram = (relationships: Relationship[]): string => {
@@ -127,22 +128,46 @@ function SidePanel() {
     return mermaidCode;
   };
 
-
   const renderMermaidDiagram = (relationships: Relationship[]): string => {
-    let mermaidCode = "graph LR\n";
+    let mermaidCode = "graph LR\n"; // graph TD
     relationships.forEach((rel) => {
       const { entity1, entity2, description } = rel;
       const safeEntity1 = sanitizeMermaidText(entity1);
       const safeEntity2 = sanitizeMermaidText(entity2);
       const safeDescription = sanitizeMermaidText(description);
-      mermaidCode += `    ${safeEntity1}[${entity1}] -->|${safeDescription}| ${safeEntity2}[${entity2}]\n`;
-
-      //mermaidCode += `    ${safeEntity1} -->|${safeDescription}| ${safeEntity2}\n`;
+      mermaidCode += `    ${safeEntity1}[${entity1.trim()}] -->|${safeDescription}| ${safeEntity2}[${entity2.trim()}]\n`;
+      mermaidCode += `    style ${safeEntity1} fill:#0077be,color:#fff\n`;
     });
     return mermaidCode;
   };
 
-  const MAX_RETRIES = 5;
+  const MAX_RETRIES = 3;
+
+  const summarizePageContent = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setMessage("Summarizing page content...");
+
+      const pageContent = await ContentService.getPageContent();
+
+      const chunks = ContentService.splitIntoChunks(pageContent, 5000);
+
+      let combinedSummary = "";
+
+      for (const chunk of chunks) {
+        const chunkSummary = await aiService.summarizeContent(chunk);
+        combinedSummary += chunkSummary + "\n";
+        setSummary(combinedSummary);
+      }
+    } catch (error: any) {
+      console.error("Summarization failed:", error);
+      setMessage(`Summarization failed: ${error.message} (${error.name})`);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [aiService]);
 
   const analyzePageContent = useCallback(
     async (options = { shouldSummarize: true }) => {
@@ -213,9 +238,13 @@ function SidePanel() {
                 console.error("Error analyzing chunk:", error);
                 retryCount++;
                 if (retryCount >= MAX_RETRIES) {
-                  throw new Error(
-                    `Failed to analyze chunk after ${MAX_RETRIES} attempts`
+                  console.warn(
+                    `Skipping chunk ${
+                      i + 1
+                    } after ${MAX_RETRIES} failed attempts`
                   );
+                  success = true;
+                  break;
                 }
                 // Clear current chunk results
                 setMessage(
@@ -234,12 +263,12 @@ function SidePanel() {
 
         setRelationships(relationshipService.getRelationships());
         /* const entityList = relationshipService
-          .getEntitiesList()
-          .map((entity) => ({
-            name: entity,
-            count: relationshipService.getEntityCount(entity),
-          })); 
-         setEntities(entityList);*/
+            .getEntitiesList()
+            .map((entity) => ({
+              name: entity,
+              count: relationshipService.getEntityCount(entity),
+            })); 
+           setEntities(entityList);*/
       } catch (error: any) {
         console.error("Analysis failed:", error);
         setMessage(`Analysis failed: ${error.message} (${error.name})`);
@@ -259,18 +288,34 @@ function SidePanel() {
 
   return (
     <div className="p-4">
-      <h2 className="text-2xl font-bold py-4">Docagram</h2>
-      <div
-        className="text-white text-xl p-4 mb-4 bg-blue-600 shadow-md rounded-md cursor-pointer"
-        onClick={() => {
-          analyzePageContent();
-        }}
-      >
-        Visualize
+      <h2 className="text-2xl font-bold py-4">Docagram 3</h2>
+      <div className="flex gap-4">
+        <div
+          className="text-white text-xl p-4 mb-4 bg-blue-600 shadow-md rounded-md cursor-pointer"
+          onClick={() => {
+            analyzePageContent();
+          }}
+        >
+          Visualize
+        </div>
+        <div
+          className="text-white text-xl p-4 mb-4 bg-blue-900 shadow-md rounded-md cursor-pointer"
+          onClick={() => {
+            summarizePageContent();
+          }}
+        >
+          Summarize
+        </div>
       </div>
       {error && (
         <div className="text-red-600 p-4 mb-4 border border-red-800 rounded-md">
           {error}
+        </div>
+      )}
+      {summary && (
+        <div className="summary p-4 mb-4 bg-gray-100 rounded-md">
+          <h3 className="text-lg font-bold mb-2">Summary</h3>
+          <p>{summary}</p>
         </div>
       )}
       {entities.length > 0 && (

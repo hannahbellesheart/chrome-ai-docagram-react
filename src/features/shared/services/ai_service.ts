@@ -114,15 +114,16 @@ export class AIService {
    * Summarizes the content if it exceeds the maximum length.
    *
    * @param {string} content - The content to summarize.
-   * @param {number} maxLength - The maximum allowed length.
+   * @param {number} minLength - The maximum allowed length.
    * @returns {Promise<string>} The summarized content or original content.
    */
-  async summarizeContent(content: string, maxLength = 2000): Promise<string> {
+  async summarizeContent(content: string, minLength = 1000): Promise<string> {
     console.log("Summarizing content..." + content);
     console.log("Length of content: " + content.length);
 
-    if (!content || content.length <= maxLength) {
-      return content;
+    if (!content || content.length <= minLength) {
+      console.log("Content does not need to be summarized");
+      return '';
     }
 
     if (!this.summarizeSession) {
@@ -143,7 +144,7 @@ export class AIService {
             return await this.summarizeSession.summarize(content);
           } else {
             console.warn("Summarizer not available, using original content");
-            return content;
+            return '';
           }
         } catch (reinitError) {
           console.warn("Failed to reinitialize summarizer:", reinitError);
@@ -176,7 +177,7 @@ export class AIService {
       Analyze this text chunk (${
         chunkIndex + 1
       } of ${totalChunks}) and identify key relationships between entities.
-      Express each relationship using this format: [First Entity] to [Second Entity] (Description of relationship)
+      Express each relationship using this format: Entity1 to Entity2 (Description of relationship)
       
       Format rules:
       1. Each line should be: Entity1 to Entity2 (Description)
