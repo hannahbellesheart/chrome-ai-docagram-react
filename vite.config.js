@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import path from "path"
 import { resolve } from "path";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 
@@ -15,6 +16,11 @@ export default defineConfig({
       ],
     }),
   ],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
   build: {
     outDir: "dist",
     assetsDir: "",
@@ -22,6 +28,7 @@ export default defineConfig({
       input: {
         sidepanel: resolve(__dirname, "sidepanel.html"),
         background: resolve(__dirname, "src/app/background.ts"),
+        content: resolve(__dirname, "src/app/content.ts"),
         options: resolve(__dirname, "options.html"),
       },
       output: {

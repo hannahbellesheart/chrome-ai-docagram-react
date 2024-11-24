@@ -1,3 +1,5 @@
+import { DEFAULT_OPTIONS } from "@/features/options/Options";
+
 export const systemPrompt = `You are a helpful assistant that analyzes text to identify key entities and their relationships. 
 For each relationship, explain the connection between entities in a clear and concise way. 
 Focus on the most important and meaningful relationships.
@@ -78,11 +80,11 @@ export class AIService {
    * @param {number} topK - The topK setting for the language model.
    * @returns {Promise<AILanguageModel>} The initialized language model session.
    */
-  async initialize(
-    temperature: number,
-    topK: number
-  ): Promise<AILanguageModel> {
+  async initialize(): Promise<AILanguageModel> {
     try {
+      const result = await chrome.storage.sync.get("docagramOptions");
+      const options = result.docagramOptions || DEFAULT_OPTIONS;
+
       await this.destroy();
 
       const support = await this.checkSupport();
@@ -92,8 +94,8 @@ export class AIService {
       }
 
       this.model = await this.ai.languageModel.create({
-        temperature,
-        topK,
+        temperature: options.temperature,
+        topK: options.topK,
       });
 
       if (!support.hasSummarizer) {
@@ -123,16 +125,17 @@ export class AIService {
 
     if (!content || content.length <= minLength) {
       console.log("Content does not need to be summarized");
-      return '';
+      return "";
     }
 
     if (!this.summarizeSession) {
       console.warn("Summarizer not available");
-      return 'Summarizer not available';
+      return "Summarizer not available";
     }
 
     try {
       const summary = await this.summarizeSession.summarize(content);
+      console.log("Summarized content: " + summary);
       return summary;
     } catch (error) {
       // If session is invalid, try to reinitialize summarizer
@@ -144,14 +147,14 @@ export class AIService {
             return await this.summarizeSession.summarize(content);
           } else {
             console.warn("Summarizer not available, using original content");
-            return '';
+            return "";
           }
         } catch (reinitError) {
           console.warn("Failed to reinitialize summarizer:", reinitError);
         }
       }
       console.warn("Summarization failed, using original content:", error);
-      return content;
+      return "Failed";
     }
   }
 
@@ -173,29 +176,10 @@ export class AIService {
     } else {
     }
 
-    const prompt = `
-      Analyze this text chunk (${
-        chunkIndex + 1
-      } of ${totalChunks}) and identify key relationships between entities.
-      Express each relationship using this format: Entity1 to Entity2 (Description of relationship)
-      
-      Format rules:
-      1. Each line should be: Entity1 to Entity2 (Description)
-      2. Keep entity names clear but concise
-      3. Place the relationship description in parentheses
-      4. Make descriptions brief and specific
-      5. Only include relationships that are clear and meaningful
-      
-      Examples:
-      Google to Chrome Browser (develops and maintains the browser)
-      Chrome to Web Extensions (provides platform and APIs)
-      Microsoft to Windows (develops and distributes operating system)
-      
-      Only output the relationships, no additional text or explanation.
-      Each relationship should be on its own line.
-      
-      Text chunk to analyze: ${chunk}
-    `;
+    const result = await chrome.storage.sync.get("docagramOptions");
+    const options = result.docagramOptions || DEFAULT_OPTIONS;
+
+    const prompt = `${options.systemPrompt}: ${chunk}`;
 
     try {
       return this.model.promptStreaming(prompt);
@@ -205,7 +189,7 @@ export class AIService {
       if (error instanceof DOMException && error.name === "InvalidStateError") {
         const capabilities = await this.getCapabilities();
         if (capabilities.available !== "no") {
-          await this.initialize(this.model.temperature, this.model.topK);
+          await this.initialize();
           return this.model.promptStreaming(prompt);
         }
       }

@@ -1,3 +1,5 @@
+import { DEFAULT_OPTIONS } from "@/features/options/Options";
+
 export class ContentService {
   static async getPageContent(): Promise<string> {
     const [tab] = await chrome.tabs.query({
@@ -40,7 +42,12 @@ export class ContentService {
     return result as string;
   }
 
-  static splitIntoChunks(content: string, chunkSize: number = 3000): string[] {
+  static async splitIntoChunks(content: string): Promise<string[]> {
+
+    const result = await chrome.storage.sync.get('docagramOptions');
+    const options = result.docagramOptions || DEFAULT_OPTIONS;
+    const chunkSize = options.chunkSize;
+    
     const chunks: string[] = [];
     for (let i = 0; i < content.length; i += chunkSize) {
       chunks.push(content.slice(i, i + chunkSize));

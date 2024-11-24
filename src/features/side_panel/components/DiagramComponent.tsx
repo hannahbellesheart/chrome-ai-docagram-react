@@ -3,7 +3,7 @@ import mermaid from "mermaid";
 
 interface DiagramComponentProps {
   diagramDefinition: string;
-  onNodeClick: (entity: string) => void;
+  onNodeClick?: (entity: string) => void;
 }
 
 const DiagramComponent: React.FC<DiagramComponentProps> = ({
@@ -63,7 +63,7 @@ const DiagramComponent: React.FC<DiagramComponentProps> = ({
                 }
               }
 
-              if (entityName) {
+              if (entityName && onNodeClick) {
                 onNodeClick(entityName);
               }
             });
