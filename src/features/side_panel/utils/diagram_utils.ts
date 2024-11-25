@@ -10,7 +10,7 @@ export const sanitizeMermaidText = (text: string): string => {
 };
 
 export const sanitizeMermaidLabel = (text: string): string => {
-  return text.trim().replace(/[©®*"’`]/g, "");
+  return text.trim().replace(/[©®*"’`\[\]]/g, "");
 };
 
 export const exportForNomnoml = (relationships: Relationship[]): string => {

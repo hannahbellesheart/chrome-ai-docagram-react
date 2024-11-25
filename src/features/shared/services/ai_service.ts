@@ -125,7 +125,6 @@ export class AIService {
    * @returns {Promise<string>} The summarized content or original content.
    */
   async summarizeContent(content: string, minLength = 1000): Promise<string> {
-    console.log("Summarizing content..." + content);
     console.log("Length of content: " + content.length);
 
     if (!content || content.length <= minLength) {

@@ -25,8 +25,10 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ChevronsUpDown } from "lucide-react";
+import Welcome from "./Welcome";
+import SectionCard from "./SectionCard";
 
-interface SectionData {
+export interface SectionData {
   summary: string;
   relationships: Relationship[];
   message: string;
@@ -48,7 +50,6 @@ export default function CombinedTab({
   const [status, setStatus] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
-  // Controls
   const [showSummaries, setShowSummaries] = useState<boolean>(true);
   const [showDiagrams, setShowDiagrams] = useState<boolean>(true);
 
@@ -69,7 +70,6 @@ export default function CombinedTab({
   // Collapsible state variables
   const [isCombinedDiagramOpen, setIsCombinedDiagramOpen] =
     useState<boolean>(true);
-  const [isSectionOpen, setIsSectionOpen] = useState<boolean[]>([]);
 
   useEffect(() => {
     // Cleanup highlights when component unmounts
@@ -84,10 +84,6 @@ export default function CombinedTab({
       });
     };
   }, []);
-
-  useEffect(() => {
-    setIsSectionOpen(new Array(sections.length).fill(true));
-  }, [sections]);
 
   const analyzeSummaryAndContent = useCallback(async () => {
     try {
@@ -154,24 +150,6 @@ export default function CombinedTab({
     }
   }, [aiService]);
 
-  const handleNodeClick = async (entity: string) => {
-    try {
-      const [tab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
-
-      if (tab.id) {
-        await chrome.tabs.sendMessage(tab.id, {
-          action: "highlight",
-          entity: entity === selectedEntity ? "" : entity,
-        });
-      }
-    } catch (error) {
-      console.error("Failed to send highlight message:", error);
-    }
-  };
-
   const handleEntityClick = (entity: string) => {
     if (entity === selectedEntity) {
       setSelectedEntity(null);
@@ -212,6 +190,24 @@ export default function CombinedTab({
     }
   };
 
+  const handleNodeClick = async (entity: string) => {
+    try {
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+
+      if (tab.id) {
+        await chrome.tabs.sendMessage(tab.id, {
+          action: "highlight",
+          entity: entity === selectedEntity ? "" : entity,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to send highlight message:", error);
+    }
+  };
+
   const handleDiagramNodeClick = (entity: string) => {
     handleNodeClick(entity);
     handleEntityClick(entity);
@@ -248,12 +244,25 @@ export default function CombinedTab({
     <Card className="w-full bg-background">
       <CardContent className="pt-0 px-0">
         {/* Sticky Header */}
-        <div className="sticky top-0 z-10 border-b-[1px] border-secondary bg-background rounded-t-xl">
+        <div className="sticky top-0 z-10 border-b-[1px] border-border bg-background rounded-t-xl">
           <div className="flex flex-wrap items-center gap-2 p-2 md:p-4">
             <img
               src="/docagram.png"
               alt="Docagram Logo"
-              className="h-9 w-auto mr-4 rounded-sm"
+              onClick={() => {
+                setSections([]);
+                setStatus("");
+                setError(null);
+                setShowSummaries(true);
+                setShowDiagrams(true);
+                setCombinedRelationships([]);
+                setCombinedEntities([]);
+                setSelectedCombinedTab("diagram");
+                setSelectedEntity(null);
+                setMinimumEntityCount(1);
+                setIsCombinedDiagramOpen(true);
+              }}
+              className="h-9 w-auto mr-4 rounded-sm cursor-pointer"
             />
             <Button
               onClick={analyzeSummaryAndContent}
@@ -329,11 +338,19 @@ export default function CombinedTab({
                       value={selectedCombinedTab}
                       onValueChange={setSelectedCombinedTab}
                     >
-                      <div className="flex gap-4 pt-4">
+                      <div className="flex gap-4 pt-4 items-center">
                         <TabsList>
                           <TabsTrigger value="diagram">Diagram</TabsTrigger>
                           <TabsTrigger value="entities">Entities</TabsTrigger>
                         </TabsList>
+                        {selectedEntity && (
+                          <div>
+                            <Label className="mr-2">Selected Entity:</Label>
+                            <span className="font-semibold text-primary">
+                              {selectedEntity}
+                            </span>
+                          </div>
+                        )}
                         {selectedEntity && (
                           <Button
                             variant={"outline"}
@@ -373,50 +390,18 @@ export default function CombinedTab({
           )}
 
           {sections.map((section, index) => (
-            <Card key={index} className="mb-6">
-              <CardContent className="space-y-4">
-                <Collapsible
-                  open={isSectionOpen[index]}
-                  onOpenChange={(open) => {
-                    const newIsSectionOpen = [...isSectionOpen];
-                    newIsSectionOpen[index] = open;
-                    setIsSectionOpen(newIsSectionOpen);
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-bold py-4">
-                      Section {index + 1}
-                    </h2>
-                    <CollapsibleTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <ChevronsUpDown className="h-4 w-4" />
-                        <span className="sr-only">Toggle</span>
-                      </Button>
-                    </CollapsibleTrigger>
-                  </div>
-                  <CollapsibleContent>
-                    {showSummaries && (
-                      <div className="bg-muted rounded-lg p-4">
-                        <h3 className="text-lg font-semibold mb-2">Summary</h3>
-                        <p className="text-sm text-muted-foreground whitespace-pre-line">
-                          <Markdown>{section.summary}</Markdown>
-                        </p>
-                      </div>
-                    )}
-
-                    {showDiagrams && (
-                      <div className="mt-4">
-                        <DiagramComponent
-                          relationships={section.relationships}
-                          onNodeClick={handleNodeClick}
-                        />
-                      </div>
-                    )}
-                  </CollapsibleContent>
-                </Collapsible>
-              </CardContent>
-            </Card>
+            <SectionCard
+              key={index}
+              section={section}
+              index={index}
+              selectedEntity={selectedEntity}
+              showSummary={showSummaries}
+              showDiagram={showDiagrams}
+              handleNodeClick={handleNodeClick}
+            />
           ))}
+
+          {(!sections || sections.length === 0) && <Welcome />}
         </div>
       </CardContent>
     </Card>

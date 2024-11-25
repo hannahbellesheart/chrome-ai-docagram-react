@@ -10,13 +10,17 @@ import DirectionSelector from "./DirectionSelector";
 interface DiagramComponentProps {
   relationships: Relationship[];
   onNodeClick?: (entity: string) => void;
+  startingDirection?: "LR" | "RL" | "TD" | "BT";
 }
 
 const DiagramComponent: React.FC<DiagramComponentProps> = ({
   relationships,
   onNodeClick,
+  startingDirection,
 }) => {
-  const [direction, setDirection] = useState<"LR" | "RL" | "TD" | "BT">("LR");
+  const [direction, setDirection] = useState<"LR" | "RL" | "TD" | "BT">(
+    startingDirection ?? "LR"
+  );
 
   const [diagramDefinition, setDiagramDefinition] = useState<string>("");
 
@@ -31,22 +35,36 @@ const DiagramComponent: React.FC<DiagramComponentProps> = ({
 config:\n
   look: handDrawn\n
   theme: dark\n
----\ngraph ${direction}\n`;
+---
+\nflowchart ${direction}\n`;
+    const addedLinks = new Set<string>();
     relationships.forEach((rel) => {
       const { entity1, entity2, description } = rel;
       const safeEntity1 = sanitizeMermaidText(entity1);
       const safeEntity2 = sanitizeMermaidText(entity2);
       const safeDescription = sanitizeMermaidText(description);
-      mermaidCode += `    ${safeEntity1}[${sanitizeMermaidLabel(
-        entity1
-      )}] -->${safeDescription}(${sanitizeMermaidLabel(
-        description
-      )}) -->${safeEntity2}[${sanitizeMermaidLabel(entity2)}]\n`;
+
+      const link1 = `${safeEntity1}->${safeDescription}`;
+      const link2 = `${safeDescription}->${safeEntity2}`;
+
+      if (!addedLinks.has(link1)) {
+        mermaidCode += `    ${safeEntity1}[${sanitizeMermaidLabel(
+          entity1
+        )}] -->${safeDescription}(${sanitizeMermaidLabel(description)})\n`;
+        addedLinks.add(link1);
+      }
+
+      if (!addedLinks.has(link2)) {
+        mermaidCode += `    ${safeDescription} -->${safeEntity2}[${sanitizeMermaidLabel(
+          entity2
+        )}]\n`;
+        addedLinks.add(link2);
+      }
+
       mermaidCode += `    style ${safeEntity1} fill:2563eb,stroke:#ffffff, color:#ffffff\n`;
       mermaidCode += `    style ${safeEntity2} fill:2563eb,stroke:#ffffff, color:#ffffff\n`;
       mermaidCode += `    style ${safeDescription} fill:#ffffff50,stroke-dasharray: 5 5,fontWeight: 12,stroke:#ffffff,color:#ffffff\n`;
     });
-    // Set all links (arrows) to white
     mermaidCode += `    linkStyle default stroke:#ffffff\n`;
     return mermaidCode;
   };
@@ -64,6 +82,10 @@ config:\n
           const uniqueId = `mermaid-diagram-${Math.random()
             .toString(36)
             .substr(2, 9)}`;
+
+          if (diagramDefinition === "") {
+            return;
+          }
 
           // Render the Mermaid diagram and get bindFunctions
           const { svg, bindFunctions } = await mermaid.render(
@@ -116,10 +138,6 @@ config:\n
 
     renderMermaidDiagram();
   }, [diagramDefinition, direction, onNodeClick]);
-
-  if (!diagramDefinition) {
-    return null;
-  }
 
   return (
     <div>
