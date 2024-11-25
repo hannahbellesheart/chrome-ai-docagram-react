@@ -96,6 +96,7 @@ export class AIService {
       this.model = await this.ai.languageModel.create({
         temperature: options.temperature,
         topK: options.topK,
+        systemPrompt: options.systemPrompt,
       });
 
       if (!support.hasSummarizer) {
@@ -103,7 +104,11 @@ export class AIService {
         return this.model!;
       }
 
-      this.summarizeSession = await this.ai.summarizer.create();
+      this.summarizeSession = await this.ai.summarizer.create({
+        length: "short",
+        format: "markdown",
+        type: "key-points",
+      });
       this.isInitialized = true;
       return this.model!;
     } catch (error) {
@@ -174,7 +179,9 @@ export class AIService {
     const result = await chrome.storage.sync.get("docagramOptions");
     const options = result.docagramOptions || DEFAULT_OPTIONS;
 
-    const prompt = `${options.systemPrompt}: ${chunk}`;
+    // const prompt = `${options.systemPrompt}: ${chunk}`;
+    const prompt = ` ${chunk}`;
+
 
     try {
       return this.model.promptStreaming(prompt);

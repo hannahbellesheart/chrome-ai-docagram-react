@@ -113,11 +113,7 @@ export default function CombinedTab({
           const chunkSummary = await aiService.summarizeContent(chunk);
 
           // Analyze relationships in the chunk
-          const stream = await aiService.streamAnalysis(
-            chunkSummary,
-            i,
-            chunks.length
-          );
+          const stream = await aiService.streamAnalysis(chunkSummary);
           let chunkResult = "";
 
           const reader = stream.getReader();
