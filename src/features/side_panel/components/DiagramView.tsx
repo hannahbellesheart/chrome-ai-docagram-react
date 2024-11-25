@@ -1,7 +1,4 @@
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import DiagramComponent from "./DiagramComponent";
-import RelationshipTile from "./RelationshipTile";
 import { Relationship } from "../types/relationship";
 
 interface DiagramViewProps {
@@ -34,7 +31,7 @@ export function DiagramView({
       {tab === "diagram" && diagram && ( */}
       {diagram && (
         <DiagramComponent
-          diagramDefinition={diagram}
+          relationships={relationships}
           onNodeClick={handleDiagramNodeClick}
         />
       )}

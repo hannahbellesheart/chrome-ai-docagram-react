@@ -1,1 +1,1 @@
-import{c as o,j as e,R as c,O as n}from"./c-App.BTybbOiv.js";const t=document.createElement("div");t.className="container";document.body.appendChild(t);const s=o.createRoot(t);s.render(e.jsx(c.StrictMode,{children:e.jsx(n,{})}));
+import{c as o,j as e,R as c,O as n}from"./c-App.BSmD8r3A.js";const t=document.createElement("div");t.className="container";document.body.appendChild(t);const s=o.createRoot(t);s.render(e.jsx(c.StrictMode,{children:e.jsx(n,{})}));

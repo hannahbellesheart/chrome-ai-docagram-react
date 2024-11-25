@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import path from "path"
+import path from "path";
 import { resolve } from "path";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 

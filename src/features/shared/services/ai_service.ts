@@ -135,7 +135,6 @@ export class AIService {
 
     try {
       const summary = await this.summarizeSession.summarize(content);
-      console.log("Summarized content: " + summary);
       return summary;
     } catch (error) {
       // If session is invalid, try to reinitialize summarizer
@@ -166,11 +165,7 @@ export class AIService {
    * @param {number} totalChunks - The total number of chunks.
    * @returns {Promise<ReadableStream<string>>} An async iterable of the analysis results.
    */
-  async streamAnalysis(
-    chunk: string,
-    chunkIndex: number,
-    totalChunks: number
-  ): Promise<ReadableStream<string>> {
+  async streamAnalysis(chunk: string): Promise<ReadableStream<string>> {
     if (!this.model) {
       throw new Error("Language model session not initialized");
     } else {

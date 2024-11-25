@@ -5,6 +5,7 @@ import {
   sanitizeMermaidText,
   sanitizeMermaidLabel,
 } from "../utils/diagram_utils";
+import DirectionSelector from "./DirectionSelector";
 
 interface DiagramComponentProps {
   relationships: Relationship[];
@@ -15,37 +16,49 @@ const DiagramComponent: React.FC<DiagramComponentProps> = ({
   relationships,
   onNodeClick,
 }) => {
+  const [direction, setDirection] = useState<"LR" | "RL" | "TD" | "BT">("LR");
+
   const [diagramDefinition, setDiagramDefinition] = useState<string>("");
 
   const diagramRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    setDiagramDefinition(renderMermaidDiagram(relationships));
+  }, [relationships, direction]);
+
   const renderMermaidDiagram = (relationships: Relationship[]): string => {
-    let mermaidCode = "graph LR\n";
+    let mermaidCode = `---\n
+config:\n
+  look: handDrawn\n
+  theme: dark\n
+---\ngraph ${direction}\n`;
     relationships.forEach((rel) => {
       const { entity1, entity2, description } = rel;
       const safeEntity1 = sanitizeMermaidText(entity1);
       const safeEntity2 = sanitizeMermaidText(entity2);
-      const safeDescription = sanitizeMermaidLabel(description);
+      const safeDescription = sanitizeMermaidText(description);
       mermaidCode += `    ${safeEntity1}[${sanitizeMermaidLabel(
         entity1
-      )}] -->|${safeDescription}| ${safeEntity2}[${sanitizeMermaidLabel(
-        entity2
-      )}]\n`;
-      mermaidCode += `    style ${safeEntity1} fill:#0077be,color:#fff\n`;
-      mermaidCode += `    style ${safeEntity2} fill:#0077be,color:#fff\n`;
+      )}] -->${safeDescription}(${sanitizeMermaidLabel(
+        description
+      )}) -->${safeEntity2}[${sanitizeMermaidLabel(entity2)}]\n`;
+      mermaidCode += `    style ${safeEntity1} fill:2563eb,stroke:#ffffff, color:#ffffff\n`;
+      mermaidCode += `    style ${safeEntity2} fill:2563eb,stroke:#ffffff, color:#ffffff\n`;
+      mermaidCode += `    style ${safeDescription} fill:#ffffff50,stroke-dasharray: 5 5,fontWeight: 12,stroke:#ffffff,color:#ffffff\n`;
     });
+    // Set all links (arrows) to white
+    mermaidCode += `    linkStyle default stroke:#ffffff\n`;
     return mermaidCode;
   };
 
   useEffect(() => {
     // Initialize Mermaid only once
     mermaid.initialize({ startOnLoad: false });
-    setDiagramDefinition(renderMermaidDiagram(relationships));
-  }, [relationships]);
+  }, []);
 
   useEffect(() => {
     const renderMermaidDiagram = async () => {
-      if (diagramRef.current) {
+      if (diagramRef.current && diagramRef.current !== null) {
         try {
           // Generate a unique ID for the diagram
           const uniqueId = `mermaid-diagram-${Math.random()
@@ -67,7 +80,7 @@ const DiagramComponent: React.FC<DiagramComponentProps> = ({
           }
 
           // Add custom click listeners to nodes
-          const nodes = diagramRef.current.querySelectorAll("g.node");
+          const nodes = diagramRef.current.querySelectorAll("g.rough-node");
           nodes.forEach((node) => {
             (node as HTMLElement).style.cursor = "pointer";
             node.addEventListener("click", () => {
@@ -102,14 +115,23 @@ const DiagramComponent: React.FC<DiagramComponentProps> = ({
     };
 
     renderMermaidDiagram();
-  }, [diagramDefinition, onNodeClick]);
+  }, [diagramDefinition, direction, onNodeClick]);
 
   if (!diagramDefinition) {
     return null;
   }
 
   return (
-    <div className="p-2 transition-opacity duration-300" ref={diagramRef}></div>
+    <div>
+      <DirectionSelector
+        direction={direction}
+        onDirectionChange={setDirection}
+      />
+      <div
+        className="mt-4 p-2 rounded-md transition-opacity duration-300 bg-blue-600 text-white"
+        ref={diagramRef}
+      ></div>
+    </div>
   );
 };
 

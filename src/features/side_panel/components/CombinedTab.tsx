@@ -19,6 +19,12 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { EntityList } from "./EntityList";
 import { tab } from "@testing-library/user-event/dist/tab";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ChevronsUpDown } from "lucide-react";
 
 interface SectionData {
   summary: string;
@@ -37,6 +43,7 @@ export default function CombinedTab({
   aiService,
   relationshipService,
 }: CombinedTabProps) {
+  // Existing state variables
   const [sections, setSections] = useState<SectionData[]>([]);
   const [status, setStatus] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +66,11 @@ export default function CombinedTab({
   const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
   const [minimumEntityCount, setMinimumEntityCount] = useState<number>(1);
 
+  // Collapsible state variables
+  const [isCombinedDiagramOpen, setIsCombinedDiagramOpen] =
+    useState<boolean>(true);
+  const [isSectionOpen, setIsSectionOpen] = useState<boolean[]>([]);
+
   useEffect(() => {
     // Cleanup highlights when component unmounts
     return () => {
@@ -72,6 +84,10 @@ export default function CombinedTab({
       });
     };
   }, []);
+
+  useEffect(() => {
+    setIsSectionOpen(new Array(sections.length).fill(true));
+  }, [sections]);
 
   const analyzeSummaryAndContent = useCallback(async () => {
     try {
@@ -163,6 +179,9 @@ export default function CombinedTab({
   const handleEntityClick = (entity: string) => {
     if (entity === selectedEntity) {
       setSelectedEntity(null);
+      setCombinedRelationships(
+        sections.flatMap((section) => section.relationships)
+      );
     } else {
       setSelectedEntity(entity);
       // Filter relationships to those involving the selected entity
@@ -175,6 +194,9 @@ export default function CombinedTab({
 
   const handleShowAllRelationships = () => {
     setSelectedEntity(null);
+    setCombinedRelationships(
+      sections.flatMap((section) => section.relationships)
+    );
   };
 
   const deleteEntity = (entity: string) => {
@@ -204,12 +226,16 @@ export default function CombinedTab({
     const allRelationships = sections.flatMap(
       (section) => section.relationships
     );
+
+    const uniqueRelationships =
+      relationshipService.getUniqueRelationships(allRelationships);
+
     // Generate mermaid diagram
-    setCombinedRelationships(allRelationships);
+    setCombinedRelationships(uniqueRelationships);
 
     // Collect entities and their counts
     const entityCounts = new Map<string, number>();
-    allRelationships.forEach((rel) => {
+    uniqueRelationships.forEach((rel) => {
       entityCounts.set(rel.entity1, (entityCounts.get(rel.entity1) || 0) + 1);
       entityCounts.set(rel.entity2, (entityCounts.get(rel.entity2) || 0) + 1);
     });
@@ -223,14 +249,16 @@ export default function CombinedTab({
   };
 
   return (
-    <Card className="w-full">
-      <CardContent className="pt-0">
+    <Card className="w-full bg-background">
+      <CardContent className="pt-0 px-0">
         {/* Sticky Header */}
-        <div
-          className="sticky top-0 bg-white z-10 border-b"
-          style={{ borderBottom: "1px solid #e5e7eb" }}
-        >
+        <div className="sticky top-0 z-10 border-b-[1px] border-secondary bg-background rounded-t-xl">
           <div className="flex flex-wrap items-center gap-2 p-2 md:p-4">
+            <img
+              src="/docagram.png"
+              alt="Docagram Logo"
+              className="h-9 w-auto mr-4 rounded-sm"
+            />
             <Button
               onClick={analyzeSummaryAndContent}
               disabled={loading}
@@ -281,52 +309,69 @@ export default function CombinedTab({
         </div>
 
         {/* Main Content */}
-        <div className="space-y-6 pt-6">
+        <div className="space-y-6 pt-6 px-4">
           <SystemStatus status={status} error={error} />
 
           {combinedRelationships && combinedRelationships.length > 0 && (
             <Card className="mb-6">
               <CardContent>
-                <Tabs
-                  value={selectedCombinedTab}
-                  onValueChange={setSelectedCombinedTab}
+                <Collapsible
+                  open={isCombinedDiagramOpen}
+                  onOpenChange={setIsCombinedDiagramOpen}
                 >
-                  <div className="flex gap-8 pt-4">
-                    <h2 className="text-xl font-bold">Combined Diagram</h2>
-                    <TabsList>
-                      <TabsTrigger value="diagram">Diagram</TabsTrigger>
-                      <TabsTrigger value="entities">Entities</TabsTrigger>
-                    </TabsList>
-                    {selectedEntity && (
-                      <Button
-                        variant={"outline"}
-                        onClick={handleShowAllRelationships}
-                      >
-                        Show All
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-bold pt-4">Combined Diagram</h2>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <ChevronsUpDown className="h-4 w-4" />
+                        <span className="sr-only">Toggle</span>
                       </Button>
-                    )}
+                    </CollapsibleTrigger>
                   </div>
-                  <TabsContent value="diagram">
-                    <DiagramComponent
-                      relationships={combinedRelationships}
-                      onNodeClick={handleDiagramNodeClick}
-                    />
-                  </TabsContent>
-                  <TabsContent value="entities">
-                    <EntityList
-                      entities={combinedEntities}
-                      minimumEntityCount={minimumEntityCount}
-                      setMinimumEntityCount={setMinimumEntityCount}
-                      selectedEntity={selectedEntity}
-                      handleShowAllRelationships={handleShowAllRelationships}
-                      handleEntityClick={(entity) => {
-                        handleEntityClick(entity);
-                        setSelectedCombinedTab("diagram");
-                      }}
-                      deleteEntity={deleteEntity}
-                    />
-                  </TabsContent>
-                </Tabs>
+                  <CollapsibleContent>
+                    <Tabs
+                      value={selectedCombinedTab}
+                      onValueChange={setSelectedCombinedTab}
+                    >
+                      <div className="flex gap-4 pt-4">
+                        <TabsList>
+                          <TabsTrigger value="diagram">Diagram</TabsTrigger>
+                          <TabsTrigger value="entities">Entities</TabsTrigger>
+                        </TabsList>
+                        {selectedEntity && (
+                          <Button
+                            variant={"outline"}
+                            onClick={handleShowAllRelationships}
+                          >
+                            Show All
+                          </Button>
+                        )}
+                      </div>
+                      <TabsContent value="diagram">
+                        <DiagramComponent
+                          relationships={combinedRelationships}
+                          onNodeClick={handleDiagramNodeClick}
+                        />
+                      </TabsContent>
+                      <TabsContent value="entities">
+                        <EntityList
+                          entities={combinedEntities}
+                          minimumEntityCount={minimumEntityCount}
+                          setMinimumEntityCount={setMinimumEntityCount}
+                          selectedEntity={selectedEntity}
+                          handleShowAllRelationships={
+                            handleShowAllRelationships
+                          }
+                          handleEntityClick={(entity) => {
+                            handleEntityClick(entity);
+                            setSelectedCombinedTab("diagram");
+                          }}
+                          deleteEntity={deleteEntity}
+                        />
+                      </TabsContent>
+                    </Tabs>
+                  </CollapsibleContent>
+                </Collapsible>
               </CardContent>
             </Card>
           )}
@@ -334,23 +379,45 @@ export default function CombinedTab({
           {sections.map((section, index) => (
             <Card key={index} className="mb-6">
               <CardContent className="space-y-4">
-                <h2 className="text-xl font-bold pt-4">Section {index + 1}</h2>
-
-                {showSummaries && (
-                  <div className="bg-muted rounded-lg p-4">
-                    <h3 className="text-lg font-semibold mb-2">Summary</h3>
-                    <p className="text-sm text-muted-foreground whitespace-pre-line">
-                      <Markdown>{section.summary}</Markdown>
-                    </p>
+                <Collapsible
+                  open={isSectionOpen[index]}
+                  onOpenChange={(open) => {
+                    const newIsSectionOpen = [...isSectionOpen];
+                    newIsSectionOpen[index] = open;
+                    setIsSectionOpen(newIsSectionOpen);
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-bold py-4">
+                      Section {index + 1}
+                    </h2>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <ChevronsUpDown className="h-4 w-4" />
+                        <span className="sr-only">Toggle</span>
+                      </Button>
+                    </CollapsibleTrigger>
                   </div>
-                )}
+                  <CollapsibleContent>
+                    {showSummaries && (
+                      <div className="bg-muted rounded-lg p-4">
+                        <h3 className="text-lg font-semibold mb-2">Summary</h3>
+                        <p className="text-sm text-muted-foreground whitespace-pre-line">
+                          <Markdown>{section.summary}</Markdown>
+                        </p>
+                      </div>
+                    )}
 
-                {showDiagrams && (
-                  <DiagramComponent
-                    relationships={section.relationships}
-                    onNodeClick={handleNodeClick}
-                  />
-                )}
+                    {showDiagrams && (
+                      <div className="mt-4">
+                        <DiagramComponent
+                          relationships={section.relationships}
+                          onNodeClick={handleNodeClick}
+                        />
+                      </div>
+                    )}
+                  </CollapsibleContent>
+                </Collapsible>
               </CardContent>
             </Card>
           ))}

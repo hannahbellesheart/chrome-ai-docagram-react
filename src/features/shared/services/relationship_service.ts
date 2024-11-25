@@ -88,6 +88,27 @@ export class RelationshipService {
     return newRelationships;
   }
 
+   /**
+   * Returns a list of unique relationships by comparing each relationship using areRelationshipsEqual.
+   * @param relationships Array of relationships to filter.
+   * @returns Array of unique relationships.
+   */
+  getUniqueRelationships(relationships: Relationship[]): Relationship[] {
+    const uniqueRelationships: Relationship[] = [];
+
+    for (const rel of relationships) {
+      const isDuplicate = uniqueRelationships.some(existingRel =>
+        this.areRelationshipsEqual(existingRel, rel)
+      );
+
+      if (!isDuplicate) {
+        uniqueRelationships.push(rel);
+      }
+    }
+
+    return uniqueRelationships;
+  }
+
   /**
    * Resets the manager's state, clearing all relationships and entities.
    */

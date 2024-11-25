@@ -13,7 +13,7 @@ export const DEFAULT_OPTIONS: DocagramOptions = {
   temperature: 0.7,
   topK: 40,
   minimumEntityCount: 2,
-  chunkSize: 2000,
+  chunkSize: 3000,
   systemPrompt: `Analyze this and identify key relationships between entities.
 Express each relationship using this format: Entity1 to Entity2 (Description of relationship)
 
