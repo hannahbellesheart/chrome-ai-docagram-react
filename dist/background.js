@@ -1,1 +1,0 @@
-chrome.runtime.onInstalled.addListener(()=>{chrome.sidePanel.setPanelBehavior({openPanelOnActionClick:!0})});const e={GOOGLE_API_KEY:"AIzaSyA74Geh3L6X31F5QM7dfvq5dyxMSs0hPeY"};chrome.storage.local.set(e);
