@@ -37,5 +37,9 @@ export default defineConfig({
         assetFileNames: "[name].[ext]",
       },
     },
+    
   },
+  define: {
+    'process.env.GOOGLE_API_KEY': JSON.stringify(process.env.GOOGLE_API_KEY),
+  }
 });

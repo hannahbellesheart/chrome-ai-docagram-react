@@ -3,7 +3,7 @@
 This project uses the following APIs:
 - [Prompt API](https://docs.google.com/document/d/1VG8HIyz361zGduWgNG7R_R8Xkv0OOJ8b5C9QKeCjU0c/edit?tab=t.0)
 - [Summarization API](https://docs.google.com/document/d/1Bvd6cU9VIEb7kHTAOCtmmHNAYlIZdeNmV7Oy-2CtimA/edit?tab=t.0)
-- [Writer and Rewriter APIs](https://docs.google.com/document/d/1WZlAvfrIWDwzQXdqIcCOTcrWLGGgmoesN1VGFbKU_D4/edit?pli=1&tab=t.0)
+- [Writer and Rewriter APIs](https://docs.google.com/document/d/1WZlAvfrIWDwzQXdqIcCOTcrWLGGgmoesN1VGFbKU_D4/edit?pli=1&tab=t.0) (Doesn't work, using Prompt API instead)
 
 All docs for the built-in AI APIs can be found [here](https://docs.google.com/document/d/18otm-D9xhn_XyObbQrc1v7SI-7lBX3ynZkjEpiS1V04/edit?tab=t.0).
 
@@ -15,6 +15,12 @@ Enable the following flags in Chrome:
 - chrome://flags/#summarization-api-for-gemini-nano
 - chrome://flags/#writer-api-for-gemini-nano
 - chrome://flags/#rewriter-api-for-gemini-nano
+
+To optionally use the Gemini Pro model for analyzing pages, add a `.env` file at the root of your project with the following key:
+
+```
+VITE_GOOGLE_API_KEY=
+```
 
 # Development
 

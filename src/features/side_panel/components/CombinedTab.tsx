@@ -9,10 +9,6 @@ import { RelationshipService } from "@/features/shared/services/relationship_ser
 import { ContentService } from "@/features/shared/services/content_service";
 import DiagramComponent from "./DiagramComponent";
 import Markdown from "react-markdown";
-import {
-  sanitizeMermaidLabel,
-  sanitizeMermaidText,
-} from "../utils/diagram_utils";
 import { AIService } from "@/features/shared/services/ai_service";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -49,6 +45,7 @@ export default function CombinedTab({
   const [sections, setSections] = useState<SectionData[]>([]);
   const [status, setStatus] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const [useGemini, setUseGemini] = useState<boolean>(false);
 
   const [showSummaries, setShowSummaries] = useState<boolean>(true);
   const [showDiagrams, setShowDiagrams] = useState<boolean>(true);
@@ -105,53 +102,64 @@ export default function CombinedTab({
       setCombinedRelationships([]);
       setCombinedEntities([]);
       setSelectedEntity(null);
-
-      const pageContent = await ContentService.getPageContent();
-      const chunks = await ContentService.splitIntoChunks(pageContent);
       const pageUrl = window.location.href;
       const newSections: SectionData[] = [];
+      const pageContent = await ContentService.getPageContent();
 
-      for (let i = 0; i < chunks.length; i++) {
-        const chunk = chunks[i];
-        setStatus(`Processing section ${i + 1} of ${chunks.length}`);
+      if (!useGemini) {
+        const chunks = await ContentService.splitIntoChunks(pageContent);
 
-        try {
-          // Generate summary for the chunk
-          const chunkSummary = await aiService.summarizeContent(chunk);
+        for (let i = 0; i < chunks.length; i++) {
+          const chunk = chunks[i];
+          setStatus(`Processing section ${i + 1} of ${chunks.length}`);
 
-          // Analyze relationships in the chunk
-          const stream = await aiService.streamAnalysis(chunkSummary);
-          let chunkResult = "";
+          try {
+            // Generate summary for the chunk
+            const chunkSummary = await aiService.summarizeContent(chunk);
 
-          const reader = stream.getReader();
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            chunkResult = value;
+            // Analyze relationships in the chunk
+            const stream = await aiService.streamAnalysis(chunkSummary, {
+              useGemini: false,
+            });
+            let chunkResult = "";
 
-            // Create temporary RelationshipService for this section
-            const sectionRelationshipService = new RelationshipService();
-            sectionRelationshipService.parseRelationships(chunkResult, pageUrl);
-            const sectionRelationships =
-              sectionRelationshipService.getRelationships();
+            const reader = stream.getReader();
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              chunkResult = value;
 
-            // Create section data
-            const sectionData: SectionData = {
-              summary: chunkSummary,
-              relationships: sectionRelationships,
-              message: chunkResult,
-            };
+              // Create temporary RelationshipService for this section
+              const sectionRelationshipService = new RelationshipService();
+              sectionRelationshipService.parseRelationships(
+                chunkResult,
+                pageUrl
+              );
+              const sectionRelationships =
+                sectionRelationshipService.getRelationships();
 
-            // Update sections
-            newSections[i] = sectionData;
-            setSections([...newSections]);
+              // Create section data
+              const sectionData: SectionData = {
+                summary: chunkSummary,
+                relationships: sectionRelationships,
+                message: chunkResult,
+              };
+
+              // Update sections
+              newSections[i] = sectionData;
+              setSections([...newSections]);
+            }
+          } catch (error: any) {
+            console.error(`Error processing section ${i + 1}:`, error);
+            setError(`Error processing section ${i + 1}: ${error.message}`);
           }
-        } catch (error: any) {
-          console.error(`Error processing section ${i + 1}:`, error);
-          setError(`Error processing section ${i + 1}: ${error.message}`);
-        }
 
-        await new Promise((resolve) => setTimeout(resolve, 0));
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+      } else {
+        const sections = await aiService.analyzeTextWithGemini(pageContent);
+
+        setSections(sections);
       }
     } catch (error: any) {
       console.error("Analysis failed:", error);
@@ -159,7 +167,7 @@ export default function CombinedTab({
     } finally {
       setStatus("");
     }
-  }, [aiService]);
+  }, [aiService, useGemini]);
 
   const handleEntityClick = (entity: string) => {
     if (entity === selectedEntity) {
@@ -266,6 +274,7 @@ export default function CombinedTab({
                 setError(null);
                 setShowSummaries(true);
                 setShowDiagrams(true);
+                setUseGemini(false);
                 setCombinedRelationships([]);
                 setCombinedEntities([]);
                 setSelectedCombinedTab("diagram");
@@ -312,6 +321,16 @@ export default function CombinedTab({
                   Show Diagrams
                 </Label>
               </div>
+              <div className="flex items-center">
+                <Switch
+                  id="gemini-pro"
+                  checked={useGemini}
+                  onCheckedChange={setUseGemini}
+                />
+                <Label htmlFor="gemini-pro" className="ml-2 mr-4">
+                  Use Gemini
+                </Label>
+              </div>
               <Button
                 className="hidden md:block"
                 onClick={combineAllDiagrams}
@@ -322,6 +341,13 @@ export default function CombinedTab({
               </Button>
             </div>
           </div>
+          {useGemini && (
+            <div className="p-2 mx-2 mb-2 md:p-4 bg-blue-100 border border-blue-300 rounded-md shadow-md">
+              <Markdown>
+                {`**Gemini Mode** is enabled. This will use advanced AI models to analyze the content. This may take longer and consume more resources.`}
+              </Markdown>
+            </div>
+          )}
         </div>
 
         {/* Main Content */}

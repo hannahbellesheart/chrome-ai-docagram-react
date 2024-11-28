@@ -159,7 +159,9 @@ export function VisualizeTab({
 
               await new Promise((resolve) => setTimeout(resolve, 0));
 
-              const stream = await aiService.streamAnalysis(chunk);
+              const stream = await aiService.streamAnalysis(chunk, {
+                useGemini: false,
+              });
               let chunkResult = "";
 
               const reader = stream.getReader();
