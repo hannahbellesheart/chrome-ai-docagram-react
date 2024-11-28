@@ -31,12 +31,14 @@ export interface SessionStats {
 export class AIService {
   private model: AILanguageModel | null;
   private summarizeSession: AISummarizer | null;
+  private rewriter: AIRewriter | null;
   private isInitialized: boolean;
   private ai = self.ai;
 
   constructor() {
     this.model = null;
     this.summarizeSession = null;
+    this.rewriter = null;
     this.isInitialized = false;
   }
 
@@ -109,6 +111,8 @@ export class AIService {
         format: "markdown",
         type: "key-points",
       });
+
+      this.rewriter = await this.ai.rewriter.create();
       this.isInitialized = true;
       return this.model!;
     } catch (error) {
@@ -124,7 +128,11 @@ export class AIService {
    * @param {number} minLength - The maximum allowed length.
    * @returns {Promise<string>} The summarized content or original content.
    */
-  async summarizeContent(content: string, minLength = 1000): Promise<string> {
+  async summarizeContent(
+    content: string,
+    minLength = 1000,
+    maxRetries = 3
+  ): Promise<string> {
     console.log("Length of content: " + content.length);
 
     if (!content || content.length <= minLength) {
@@ -137,28 +145,52 @@ export class AIService {
       return "Summarizer not available";
     }
 
-    try {
-      const summary = await this.summarizeSession.summarize(content);
-      return summary;
-    } catch (error) {
-      // If session is invalid, try to reinitialize summarizer
-      if (error instanceof DOMException && error.name === "InvalidStateError") {
-        try {
-          const support = await this.checkSupport();
-          if (support.hasSummarizer) {
-            this.summarizeSession = await self.ai!.summarizer!.create();
-            return await this.summarizeSession.summarize(content);
-          } else {
-            console.warn("Summarizer not available, using original content");
-            return "";
+    let attempts = 0;
+    while (attempts < maxRetries) {
+      try {
+        const summary = await this.summarizeSession.summarize(content);
+        return summary;
+      } catch (error) {
+        attempts++;
+
+        // If session is invalid, try to reinitialize summarizer
+        if (
+          error instanceof DOMException &&
+          error.name === "InvalidStateError"
+        ) {
+          try {
+            const support = await this.checkSupport();
+            if (support.hasSummarizer) {
+              this.summarizeSession = await self.ai!.summarizer!.create();
+              // Retry immediately after reinitialization
+              continue;
+            } else {
+              console.warn("Summarizer not available, using original content");
+              return "";
+            }
+          } catch (reinitError) {
+            console.warn("Failed to reinitialize summarizer:", reinitError);
           }
-        } catch (reinitError) {
-          console.warn("Failed to reinitialize summarizer:", reinitError);
+        }
+
+        // Log the attempt number
+        console.warn(
+          `Summarization attempt ${attempts}/${maxRetries} failed:`,
+          error
+        );
+
+        // If we haven't reached max retries, add a small delay before retrying
+        if (attempts < maxRetries) {
+          const delayMs = Math.min(1000 * Math.pow(2, attempts), 5000); // Exponential backoff with 5s cap
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        } else {
+          console.warn("All retry attempts failed");
+          return "Failed";
         }
       }
-      console.warn("Summarization failed, using original content:", error);
-      return "Failed";
     }
+
+    return "Failed";
   }
 
   /**
@@ -180,7 +212,6 @@ export class AIService {
 
     // const prompt = `${options.systemPrompt}: ${chunk}`;
     const prompt = ` ${chunk}`;
-
 
     try {
       return this.model.promptStreaming(prompt);
