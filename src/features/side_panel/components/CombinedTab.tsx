@@ -60,6 +60,7 @@ export default function CombinedTab({
   const [combinedEntities, setCombinedEntities] = useState<
     { name: string; count: number }[]
   >([]);
+  const [entitySummary, setEntitySummary] = useState<string | null>(null);
   const [selectedCombinedTab, setSelectedCombinedTab] =
     useState<string>("diagram");
 
@@ -84,6 +85,18 @@ export default function CombinedTab({
       });
     };
   }, []);
+
+  useEffect(() => {
+    if (combinedRelationships.length > 0) {
+      aiService
+        .rewriteRelationships(combinedRelationships)
+        .then((rewrittenRelationships) => {
+          setEntitySummary(rewrittenRelationships);
+        });
+    } else {
+      setEntitySummary(null);
+    }
+  }, [combinedRelationships]);
 
   const analyzeSummaryAndContent = useCallback(async () => {
     try {
@@ -361,6 +374,13 @@ export default function CombinedTab({
                         )}
                       </div>
                       <TabsContent value="diagram">
+                        {selectedEntity && (
+                          <div>
+                            <span className="font-semibold text-primary">
+                              {entitySummary}
+                            </span>
+                          </div>
+                        )}
                         <DiagramComponent
                           relationships={combinedRelationships}
                           onNodeClick={handleDiagramNodeClick}

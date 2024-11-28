@@ -76,7 +76,7 @@ config:\n
 
   useEffect(() => {
     const renderMermaidDiagram = async () => {
-      if (diagramRef.current && diagramRef.current !== null) {
+      if (diagramRef.current) {
         try {
           // Generate a unique ID for the diagram
           const uniqueId = `mermaid-diagram-${Math.random()
@@ -138,7 +138,6 @@ config:\n
 
     renderMermaidDiagram();
   }, [diagramDefinition, direction, onNodeClick]);
-
   return (
     <div>
       <DirectionSelector

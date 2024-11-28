@@ -1,4 +1,5 @@
 import { DEFAULT_OPTIONS } from "@/features/options/Options";
+import { Relationship } from "@/features/side_panel/types/relationship";
 
 export const systemPrompt = `You are a helpful assistant that analyzes text to identify key entities and their relationships. 
 For each relationship, explain the connection between entities in a clear and concise way. 
@@ -296,5 +297,30 @@ export class AIService {
     }
 
     this.isInitialized = false;
+  }
+
+  async rewriteRelationships(relationships: Relationship[]): Promise<string> {
+    if (!this.rewriter) {
+      throw new Error("Rewriter not available");
+    }
+
+    console.log("Rewriting relationships:", relationships);
+    try {
+      const rewritten = await this.rewriter.rewrite(
+        relationships
+          .map((rel) => {
+            return `${rel.entity1} to ${rel.entity2} (${rel.description})`;
+          })
+          .join("\n"),
+        {
+          context: "Rewrite these relationships in a comprehensive paragraph.",
+        }
+      );
+
+      return rewritten;
+    } catch (error) {
+      console.error("Error rewriting relationships:", error);
+      throw error;
+    }
   }
 }

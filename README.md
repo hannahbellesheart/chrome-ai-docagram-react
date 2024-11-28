@@ -16,6 +16,14 @@ Enable the following flags in Chrome:
 - chrome://flags/#writer-api-for-gemini-nano
 - chrome://flags/#rewriter-api-for-gemini-nano
 
+# Development
+
+Run the following to have Vite rebuild the project on all changes:
+
+```bash
+npm run dev
+```
+
 # Build a Chrome Extension With React, TypeScript, and Tailwind
 
 This repository demonstrates how to create a Chrome extension using React, TypeScript, TailwindCSS, and Webpack.
