@@ -13,18 +13,18 @@ const Welcome: React.FC = () => {
   const relationships: Relationship[] = [
     {
       entity1: "Web Page",
-      entity2: "Chunks",
+      entity2: "Sections",
       description: "Separated into",
       sourceUrl: "",
     },
     {
-      entity1: "Chunks",
+      entity1: "Sections",
       entity2: "Relationships",
       description: "Analyzed with Prompt API to generate",
       sourceUrl: "",
     },
     {
-      entity1: "Chunks",
+      entity1: "Sections",
       entity2: "Summaries",
       description: "Summarized with Summary API",
       sourceUrl: "",

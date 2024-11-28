@@ -37,7 +37,7 @@ export interface SessionStats {
 
 export class AIService {
   private model: AILanguageModel | null;
-  private gemini: GenerativeModel | null;
+  private genAi: GoogleGenerativeAI | null;
   private summarizeSession: AISummarizer | null;
   private writer: AIWriter | null;
   private isInitialized: boolean;
@@ -45,7 +45,7 @@ export class AIService {
 
   constructor() {
     this.model = null;
-    this.gemini = null;
+    this.genAi = null;
     this.summarizeSession = null;
     this.writer = null;
     this.isInitialized = false;
@@ -111,63 +111,7 @@ export class AIService {
       const googleApiKey = envVars.GOOGLE_API_KEY;
 
       if (googleApiKey) {
-        /*
-        const sectionData: SectionData = {
-                        summary: chunkSummary,
-                        relationships: sectionRelationships,
-                        message: chunkResult,
-                      };
-                      */
-        const schema = {
-          description: "Summaries and Relationships",
-          type: SchemaType.ARRAY,
-          items: {
-            type: SchemaType.OBJECT,
-            properties: {
-              summary: {
-                type: SchemaType.STRING,
-                description: "Summary of the section",
-                nullable: true,
-              },
-              relationships: {
-                type: SchemaType.ARRAY,
-                items: {
-                  type: SchemaType.OBJECT,
-                  properties: {
-                    entity1: {
-                      type: SchemaType.STRING,
-                      description: "First entity in the relationship",
-                      nullable: false,
-                    },
-                    entity2: {
-                      type: SchemaType.STRING,
-                      description: "Second entity in the relationship",
-                      nullable: false,
-                    },
-                    description: {
-                      type: SchemaType.STRING,
-                      description: "Description of the relationship",
-                      nullable: false,
-                    },
-                  },
-                  required: ["entity1", "entity2", "description"],
-                },
-                description: "Relationships between entities",
-                nullable: true,
-              },
-            },
-            required: ["summary", "relationships"],
-          },
-        };
-        const genAI = new GoogleGenerativeAI(googleApiKey);
-        this.gemini = genAI.getGenerativeModel({
-          model: "gemini-1.5-flash", // "gemini-1.5-pro",
-          systemInstruction: options.systemPrompt + 'Return a separate summary and relationships for each section of the text.',
-          generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: schema,
-          },
-        });
+        this.genAi = new GoogleGenerativeAI(googleApiKey);
       } else {
         console.warn("Google API Key not found, Gemini not available");
       }
@@ -284,29 +228,9 @@ export class AIService {
    * @param {number} totalChunks - The total number of chunks.
    * @returns {Promise<ReadableStream<string>>} An async iterable of the analysis results.
    */
-  async streamAnalysis(
-    chunk: string,
-    { useGemini = false }
-  ): Promise<ReadableStream<string>> {
-    if (useGemini && this.gemini) {
-      const asyncGenerator = await this.gemini.generateContentStream(chunk);
-      console.log("Using Gemini for analysis");
-      return new ReadableStream({
-        async pull(controller) {
-          const { value, done } = await asyncGenerator.stream.next();
-          if (done) {
-            controller.close();
-          } else {
-            controller.enqueue(value.text());
-          }
-        },
-        cancel() {
-          asyncGenerator.stream.return;
-        },
-      });
-    } else {
-      if (!this.model) {
-        /* console.error("Language model session not initialized");
+  async streamAnalysis(chunk: string): Promise<ReadableStream<string>> {
+    if (!this.model) {
+      /* console.error("Language model session not initialized");
 
       await this.destroy();
       const result = await chrome.storage.sync.get("docagramOptions");
@@ -318,42 +242,97 @@ export class AIService {
         systemPrompt: options.systemPrompt,
       }); */
 
-        return new ReadableStream({
-          start(controller) {
-            controller.error(
-              new Error("Language model session not initialized")
-            );
-          },
-        });
-      } else {
-      }
+      return new ReadableStream({
+        start(controller) {
+          controller.error(new Error("Language model session not initialized"));
+        },
+      });
+    } else {
+    }
 
-      const prompt = ` ${chunk}`;
+    const prompt = ` ${chunk}`;
 
-      try {
-        return this.model!.promptStreaming(prompt);
-      } catch (error) {
-        console.error("Error streaming analysis:", error);
-        // If session is invalid, try to reinitialize once
-        if (
-          error instanceof DOMException &&
-          error.name === "InvalidStateError"
-        ) {
-          const capabilities = await this.getCapabilities();
-          if (capabilities.available !== "no") {
-            await this.initialize();
-            return this.model.promptStreaming(prompt);
-          }
+    try {
+      return this.model!.promptStreaming(prompt);
+    } catch (error) {
+      console.error("Error streaming analysis:", error);
+      // If session is invalid, try to reinitialize once
+      if (error instanceof DOMException && error.name === "InvalidStateError") {
+        const capabilities = await this.getCapabilities();
+        if (capabilities.available !== "no") {
+          await this.initialize();
+          return this.model.promptStreaming(prompt);
         }
-        throw error;
       }
+      throw error;
     }
   }
 
-  async analyzeTextWithGemini(text: string): Promise<SectionData[]> {
-    if (!this.gemini) {
+  async analyzeTextWithGemini(
+    text: string,
+    pro: boolean = false
+  ): Promise<SectionData[]> {
+    if (!this.genAi) {
       throw new Error("Gemini not available");
     } else {
+      const result = await chrome.storage.sync.get("docagramOptions");
+      const options = result.docagramOptions || DEFAULT_OPTIONS;
+
+      let gemini = null;
+
+      const schema = {
+        description: "Summaries and Relationships",
+        type: SchemaType.ARRAY,
+        items: {
+          type: SchemaType.OBJECT,
+          properties: {
+            summary: {
+              type: SchemaType.STRING,
+              description: "Summary of the section",
+              nullable: true,
+            },
+            relationships: {
+              type: SchemaType.ARRAY,
+              items: {
+                type: SchemaType.OBJECT,
+                properties: {
+                  entity1: {
+                    type: SchemaType.STRING,
+                    description: "First entity in the relationship",
+                    nullable: false,
+                  },
+                  entity2: {
+                    type: SchemaType.STRING,
+                    description: "Second entity in the relationship",
+                    nullable: false,
+                  },
+                  description: {
+                    type: SchemaType.STRING,
+                    description: "Description of the relationship",
+                    nullable: false,
+                  },
+                },
+                required: ["entity1", "entity2", "description"],
+              },
+              description: "Relationships between entities",
+              nullable: true,
+            },
+          },
+          required: ["summary", "relationships"],
+        },
+      };
+
+      gemini = this.genAi.getGenerativeModel({
+        model: pro ? "gemini-1.5-pro" : "gemini-1.5-flash",
+        systemInstruction:
+          options.systemPrompt +
+          "Return a separate summary and relationships for each section of the text.",
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: schema,
+        },
+      });
+
       // Split the text into chunks:
       const chunkSize = 3000;
       const chunks = [];
@@ -374,7 +353,7 @@ export class AIService {
 
       console.log("Gemini chunks:", jsonChunks);
 
-      const response = await this.gemini.generateContent(jsonChunks);
+      const response = await gemini.generateContent(jsonChunks);
 
       console.log("Gemini response:", response);
       return JSON.parse(response.response.text()) as SectionData[];

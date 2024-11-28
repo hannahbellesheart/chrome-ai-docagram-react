@@ -23,6 +23,15 @@ import {
 import { ChevronsUpDown } from "lucide-react";
 import Welcome from "./Welcome";
 import SectionCard from "./SectionCard";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export interface SectionData {
   summary: string;
@@ -45,7 +54,7 @@ export default function CombinedTab({
   const [sections, setSections] = useState<SectionData[]>([]);
   const [status, setStatus] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
-  const [useGemini, setUseGemini] = useState<boolean>(false);
+  const [model, setModel] = useState<string>("built-in");
 
   const [showSummaries, setShowSummaries] = useState<boolean>(true);
   const [showDiagrams, setShowDiagrams] = useState<boolean>(true);
@@ -106,7 +115,7 @@ export default function CombinedTab({
       const newSections: SectionData[] = [];
       const pageContent = await ContentService.getPageContent();
 
-      if (!useGemini) {
+      if (model === "built-in") {
         const chunks = await ContentService.splitIntoChunks(pageContent);
 
         for (let i = 0; i < chunks.length; i++) {
@@ -118,9 +127,7 @@ export default function CombinedTab({
             const chunkSummary = await aiService.summarizeContent(chunk);
 
             // Analyze relationships in the chunk
-            const stream = await aiService.streamAnalysis(chunkSummary, {
-              useGemini: false,
-            });
+            const stream = await aiService.streamAnalysis(chunkSummary);
             let chunkResult = "";
 
             const reader = stream.getReader();
@@ -157,7 +164,10 @@ export default function CombinedTab({
           await new Promise((resolve) => setTimeout(resolve, 0));
         }
       } else {
-        const sections = await aiService.analyzeTextWithGemini(pageContent);
+        const sections = await aiService.analyzeTextWithGemini(
+          pageContent,
+          model === "pro"
+        );
 
         setSections(sections);
       }
@@ -167,7 +177,7 @@ export default function CombinedTab({
     } finally {
       setStatus("");
     }
-  }, [aiService, useGemini]);
+  }, [aiService]);
 
   const handleEntityClick = (entity: string) => {
     if (entity === selectedEntity) {
@@ -274,7 +284,7 @@ export default function CombinedTab({
                 setError(null);
                 setShowSummaries(true);
                 setShowDiagrams(true);
-                setUseGemini(false);
+                setModel("built-in");
                 setCombinedRelationships([]);
                 setCombinedEntities([]);
                 setSelectedCombinedTab("diagram");
@@ -322,26 +332,23 @@ export default function CombinedTab({
                 </Label>
               </div>
               <div className="flex items-center">
-                <Switch
-                  id="gemini-pro"
-                  checked={useGemini}
-                  onCheckedChange={setUseGemini}
-                />
-                <Label htmlFor="gemini-pro" className="ml-2 mr-4">
-                  Use Gemini
-                </Label>
+                <Select onValueChange={setModel} value={model}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select a model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Model</SelectLabel>
+                      <SelectItem value="built-in">Built-In</SelectItem>
+                      <SelectItem value="flash">Flash</SelectItem>
+                      <SelectItem value="pro">Pro</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </div>
-              <Button
-                className="hidden md:block"
-                onClick={combineAllDiagrams}
-                disabled={sections.length === 0}
-                variant="outline"
-              >
-                Combine All Diagrams
-              </Button>
             </div>
           </div>
-          {useGemini && (
+          {(model === "flash" || model === "pro") && (
             <div className="p-2 mx-2 mb-2 md:p-4 bg-blue-100 border border-blue-300 rounded-md shadow-md">
               <Markdown>
                 {`**Gemini Mode** is enabled. This will use advanced AI models to analyze the content. This may take longer and consume more resources.`}
@@ -354,6 +361,16 @@ export default function CombinedTab({
         <div className="space-y-6 pt-6 px-4">
           <SystemStatus status={status} error={error} />
 
+          {sections && sections.length > 1 && (
+            <Button
+              className="hidden md:block"
+              onClick={combineAllDiagrams}
+              disabled={sections.length === 0}
+              variant="outline"
+            >
+              Combine All Diagrams
+            </Button>
+          )}
           {combinedRelationships && combinedRelationships.length > 0 && (
             <Card className="mb-6">
               <CardContent>
