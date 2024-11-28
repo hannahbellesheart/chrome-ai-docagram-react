@@ -86,7 +86,7 @@ export default function CombinedTab({
     };
   }, []);
 
-  useEffect(() => {
+  /* useEffect(() => {
     if (combinedRelationships.length > 0 && selectedEntity) {
       aiService.writeAbout(selectedEntity).then((overview) => {
         setEntitySummary(overview);
@@ -94,7 +94,7 @@ export default function CombinedTab({
     } else {
       setEntitySummary(null);
     }
-  }, [combinedRelationships]);
+  }, [combinedRelationships]); */
 
   const analyzeSummaryAndContent = useCallback(async () => {
     try {

@@ -210,7 +210,7 @@ export class AIService {
    */
   async streamAnalysis(chunk: string): Promise<ReadableStream<string>> {
     if (!this.model) {
-      console.error("Language model session not initialized");
+      /* console.error("Language model session not initialized");
 
       await this.destroy();
       const result = await chrome.storage.sync.get("docagramOptions");
@@ -220,7 +220,7 @@ export class AIService {
         temperature: options.temperature,
         topK: options.topK,
         systemPrompt: options.systemPrompt,
-      });
+      }); */
     } else {
     }
 

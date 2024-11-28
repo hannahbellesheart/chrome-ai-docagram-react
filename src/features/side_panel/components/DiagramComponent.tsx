@@ -139,7 +139,7 @@ config:\n
     renderMermaidDiagram();
   }, [diagramDefinition, direction, onNodeClick]);
   return (
-    <div>
+    <div key={"diagram"}>
       <DirectionSelector
         direction={direction}
         onDirectionChange={setDirection}

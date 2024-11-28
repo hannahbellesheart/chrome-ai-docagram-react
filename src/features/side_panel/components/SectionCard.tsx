@@ -80,7 +80,7 @@ export default function SectionCard({
                   )}
                 </div>
               )}
-              {showDiagram && (
+              {showDiagram && section && (
                 <div className="mt-4">
                   <DiagramComponent
                     relationships={section.relationships}
