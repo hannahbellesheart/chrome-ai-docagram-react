@@ -177,7 +177,7 @@ export default function CombinedTab({
     } finally {
       setStatus("");
     }
-  }, [aiService]);
+  }, [aiService, model]);
 
   const handleEntityClick = (entity: string) => {
     if (entity === selectedEntity) {
@@ -349,7 +349,7 @@ export default function CombinedTab({
             </div>
           </div>
           {(model === "flash" || model === "pro") && (
-            <div className="p-2 mx-2 mb-2 md:p-4 bg-blue-100 border border-blue-300 rounded-md shadow-md">
+            <div className="p-2 mx-2 mb-2 md:p-4 bg-muted border border-muted rounded-md shadow-md text-muted-foreground">
               <Markdown>
                 {`**Gemini Mode** is enabled. This will use advanced AI models to analyze the content. This may take longer and consume more resources.`}
               </Markdown>

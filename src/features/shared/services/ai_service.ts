@@ -350,9 +350,6 @@ export class AIService {
 
       // Json stringified array of chunks
       const jsonChunks = JSON.stringify(chunks);
-
-      console.log("Gemini chunks:", jsonChunks);
-
       const response = await gemini.generateContent(jsonChunks);
 
       console.log("Gemini response:", response);
