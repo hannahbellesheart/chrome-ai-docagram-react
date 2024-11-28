@@ -32,14 +32,14 @@ export interface SessionStats {
 export class AIService {
   private model: AILanguageModel | null;
   private summarizeSession: AISummarizer | null;
-  private rewriter: AIRewriter | null;
+  private writer: AIWriter | null;
   private isInitialized: boolean;
   private ai = self.ai;
 
   constructor() {
     this.model = null;
     this.summarizeSession = null;
-    this.rewriter = null;
+    this.writer = null;
     this.isInitialized = false;
   }
 
@@ -113,7 +113,13 @@ export class AIService {
         type: "key-points",
       });
 
-      this.rewriter = await this.ai.rewriter.create();
+      this.writer = await this.ai.writer.create({
+        format: "plain-text",
+        length: "medium",
+        tone: "formal",
+        sharedContext:
+          "Write informative paragraphs based on the provided content.",
+      });
       this.isInitialized = true;
       return this.model!;
     } catch (error) {
@@ -204,7 +210,17 @@ export class AIService {
    */
   async streamAnalysis(chunk: string): Promise<ReadableStream<string>> {
     if (!this.model) {
-      throw new Error("Language model session not initialized");
+      console.error("Language model session not initialized");
+
+      await this.destroy();
+      const result = await chrome.storage.sync.get("docagramOptions");
+      const options = result.docagramOptions || DEFAULT_OPTIONS;
+
+      this.model = await this.ai.languageModel.create({
+        temperature: options.temperature,
+        topK: options.topK,
+        systemPrompt: options.systemPrompt,
+      });
     } else {
     }
 
@@ -280,7 +296,7 @@ export class AIService {
     console.log("Destroying AI service...");
     if (this.model) {
       try {
-        await this.model.destroy();
+        this.model.destroy();
       } catch (error) {
         console.warn("Error destroying language model session:", error);
       }
@@ -289,7 +305,7 @@ export class AIService {
 
     if (this.summarizeSession) {
       try {
-        await this.summarizeSession.destroy();
+        this.summarizeSession.destroy();
       } catch (error) {
         console.warn("Error destroying summarizer session:", error);
       }
@@ -299,23 +315,27 @@ export class AIService {
     this.isInitialized = false;
   }
 
-  async rewriteRelationships(relationships: Relationship[]): Promise<string> {
-    if (!this.rewriter) {
-      throw new Error("Rewriter not available");
-    }
-
-    console.log("Rewriting relationships:", relationships);
-    try {
-      const rewritten = await this.rewriter.rewrite(
+  async writeAbout(entity: string): Promise<string> {
+    // Doesn't work while page is being analyzed, Prompt API calls cannot run in parallel
+    /* const output = await this.model?.prompt(
+      "Write an informational paragraph based on these relationships: " +
         relationships
           .map((rel) => {
             return `${rel.entity1} to ${rel.entity2} (${rel.description})`;
           })
-          .join("\n"),
-        {
-          context: "Rewrite these relationships in a comprehensive paragraph.",
-        }
-      );
+          .join("\n")
+    );
+
+    return output || ""; */
+
+    if (!this.writer) {
+      throw new Error("Writer not available");
+    }
+
+    try {
+      const rewritten = await this.writer.write(entity, {
+        context: "Write an informational paragraph about this entity.",
+      });
 
       return rewritten;
     } catch (error) {

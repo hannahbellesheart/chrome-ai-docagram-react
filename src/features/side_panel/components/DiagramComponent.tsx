@@ -76,7 +76,7 @@ config:\n
 
   useEffect(() => {
     const renderMermaidDiagram = async () => {
-      if (diagramRef.current) {
+      if (diagramRef.current && diagramRef.current !== null) {
         try {
           // Generate a unique ID for the diagram
           const uniqueId = `mermaid-diagram-${Math.random()
@@ -131,7 +131,7 @@ config:\n
           });
         } catch (err) {
           console.error("Error rendering Mermaid diagram:", err);
-          console.log("Diagram definition:", diagramDefinition);
+          // console.log("Diagram definition:", diagramDefinition);
         }
       }
     };

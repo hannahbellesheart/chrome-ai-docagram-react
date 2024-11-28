@@ -87,12 +87,10 @@ export default function CombinedTab({
   }, []);
 
   useEffect(() => {
-    if (combinedRelationships.length > 0) {
-      aiService
-        .rewriteRelationships(combinedRelationships)
-        .then((rewrittenRelationships) => {
-          setEntitySummary(rewrittenRelationships);
-        });
+    if (combinedRelationships.length > 0 && selectedEntity) {
+      aiService.writeAbout(selectedEntity).then((overview) => {
+        setEntitySummary(overview);
+      });
     } else {
       setEntitySummary(null);
     }
@@ -375,8 +373,8 @@ export default function CombinedTab({
                       </div>
                       <TabsContent value="diagram">
                         {selectedEntity && (
-                          <div>
-                            <span className="font-semibold text-primary">
+                          <div className="py-4">
+                            <span className="font-semibold py-4">
                               {entitySummary}
                             </span>
                           </div>

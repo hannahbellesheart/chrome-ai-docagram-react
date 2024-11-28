@@ -62,7 +62,7 @@ export default function SectionCard({
                       }}
                     />
                   </div>
-                  {!showRelationships && (
+                  {!showRelationships && section && section.summary && (
                     <p className="text-sm text-muted-foreground whitespace-pre-line">
                       <Markdown>{section.summary}</Markdown>
                     </p>
@@ -72,10 +72,7 @@ export default function SectionCard({
                       {section.relationships.map((rel, index) => (
                         <div key={index} className="space-y-2">
                           <p className="text-sm font-semibold">
-                            {rel.entity1} to {rel.entity2}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {rel.description}
+                            {rel.entity1} ({rel.description}) {rel.entity2}
                           </p>
                         </div>
                       ))}

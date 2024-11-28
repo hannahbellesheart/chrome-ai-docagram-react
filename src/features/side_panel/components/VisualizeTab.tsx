@@ -159,11 +159,7 @@ export function VisualizeTab({
 
               await new Promise((resolve) => setTimeout(resolve, 0));
 
-              const stream = await aiService.streamAnalysis(
-                chunk,
-                i,
-                chunks.length
-              );
+              const stream = await aiService.streamAnalysis(chunk);
               let chunkResult = "";
 
               const reader = stream.getReader();
