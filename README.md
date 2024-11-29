@@ -1,3 +1,7 @@
+![Docagram explainer diagrams](image-1.png)
+
+![Docagram example output](image-2.png)
+
 # Built-In AI
 
 This project uses the following APIs:
@@ -30,13 +34,7 @@ Run the following to have Vite rebuild the project on all changes:
 npm run dev
 ```
 
-# Build a Chrome Extension With React, TypeScript, and Tailwind
-
-This repository demonstrates how to create a Chrome extension using React, TypeScript, TailwindCSS, and Webpack.
-
-More details can be found in this blog post:
-
-https://joemuller.com/posts/create-a-chrome-extension-with-react-typescript-and-tailwindcss/
+In Chrome Canary, load the unpacked extension from the `/dist` folder. 
 
 # Mermaid Diagram Types
 
@@ -53,3 +51,11 @@ https://joemuller.com/posts/create-a-chrome-extension-with-react-typescript-and-
 - Mind maps (mindmap): Show hierarchical thought organization
 - Timeline (timeline): Show events in chronological order
 - Quadrant charts (quadrantChart): Show data in four quadrants
+
+# Want to build a Chrome Extension
+
+This repository demonstrates how to create a Chrome extension using React, TypeScript, TailwindCSS, and Vite.
+
+More details can be found in this blog post:
+
+https://joemuller.com/posts/create-a-chrome-extension-with-react-typescript-and-tailwindcss/
