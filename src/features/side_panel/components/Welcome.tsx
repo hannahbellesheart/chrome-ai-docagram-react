@@ -1,32 +1,23 @@
-import React, { useEffect, useRef, useState } from "react";
-import mermaid from "mermaid";
+import React, { useState } from "react";
 import { Relationship } from "../types/relationship";
-import {
-  sanitizeMermaidText,
-  sanitizeMermaidLabel,
-} from "../utils/diagram_utils";
-import DirectionSelector from "./DirectionSelector";
 import DiagramComponent from "./DiagramComponent";
-import { ExternalLink, Github, Twitter, Youtube } from "lucide-react";
+import { Github, Twitter, Youtube } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Welcome: React.FC = () => {
+  const [selectedTab, setSelectedTab] = useState("built-in");
+
   const relationships: Relationship[] = [
     {
-      entity1: "Web Page",
-      entity2: "Sections",
-      description: "Separated into",
-      sourceUrl: "",
-    },
-    {
-      entity1: "Sections",
-      entity2: "Relationships",
-      description: "Analyzed with Prompt API to generate",
-      sourceUrl: "",
-    },
-    {
-      entity1: "Sections",
+      entity1: "Web Page Sections",
       entity2: "Summaries",
       description: "Summarized with Summary API",
+      sourceUrl: "",
+    },
+    {
+      entity1: "Summaries",
+      entity2: "Relationships",
+      description: "Analyzed with Prompt API to generate",
       sourceUrl: "",
     },
     {
@@ -43,6 +34,27 @@ const Welcome: React.FC = () => {
     },
   ];
 
+  const geminiRelationships: Relationship[] = [
+    {
+      entity1: "Web Page",
+      entity2: "Gemini API",
+      description: "Analyzed with ",
+      sourceUrl: "",
+    },
+    {
+      entity1: "Gemini API",
+      entity2: "Summaries",
+      description: "Outputs summaries for each section",
+      sourceUrl: "",
+    },
+    {
+      entity1: "Gemini API",
+      entity2: "Relationships",
+      description: "Outputs relationships for each section",
+      sourceUrl: "",
+    },
+  ];
+
   return (
     <div>
       <h2 className="text-lg font-bold">How does this work?</h2>
@@ -50,7 +62,25 @@ const Welcome: React.FC = () => {
         Docagram uses Chrome's built-in AI tools to turn web pages into
         diagrams. To get started, open a new tab and click the "Analyze" button.
       </p>
-      <DiagramComponent relationships={relationships} startingDirection="TD" />
+      <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+        <TabsList>
+          <TabsTrigger value="built-in">Built-In</TabsTrigger>
+          <TabsTrigger value="gemini">Gemini</TabsTrigger>
+        </TabsList>
+        <TabsContent value="built-in">
+          <DiagramComponent
+            relationships={relationships}
+            startingDirection="TD"
+          />
+        </TabsContent>
+        <TabsContent value="gemini">
+          {/* Add content for the Gemini tab here */}
+          <DiagramComponent
+            relationships={geminiRelationships}
+            startingDirection="TD"
+          />
+        </TabsContent>
+      </Tabs>{" "}
       <div className="w-full flex justify-center gap-4 pt-4">
         <a
           href="https://github.com/jtmuller5/docagram-react"

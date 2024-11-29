@@ -93,42 +93,46 @@ config:\n
             diagramDefinition
           );
 
-          // Set the innerHTML of the diagram container
-          diagramRef.current.innerHTML = svg;
+          console.log("diagramRef.current", diagramRef.current);
 
-          // Bind any predefined functions from Mermaid
-          if (bindFunctions) {
-            bindFunctions(diagramRef.current);
-          }
+          if (diagramRef.current !== null) {
+            // Set the innerHTML of the diagram container
+            diagramRef.current.innerHTML = svg;
 
-          // Add custom click listeners to nodes
-          const nodes = diagramRef.current.querySelectorAll("g.rough-node");
-          nodes.forEach((node) => {
-            (node as HTMLElement).style.cursor = "pointer";
-            node.addEventListener("click", () => {
-              console.log("Node clicked:", node);
+            // Bind any predefined functions from Mermaid
+            if (bindFunctions) {
+              bindFunctions(diagramRef.current);
+            }
 
-              // Try to get the entity name from the text content directly
-              const textElement = node.querySelector(
-                "foreignObject div span.nodeLabel"
-              );
-              let entityName = "";
+            // Add custom click listeners to nodes
+            const nodes = diagramRef.current.querySelectorAll("g.rough-node");
+            nodes.forEach((node) => {
+              (node as HTMLElement).style.cursor = "pointer";
+              node.addEventListener("click", () => {
+                console.log("Node clicked:", node);
 
-              if (textElement) {
-                entityName = textElement.textContent || "";
-              } else {
-                // Fallback to the 'title' element if 'textElement' is not found
-                const titleElement = node.querySelector("title");
-                if (titleElement) {
-                  entityName = titleElement.textContent || "";
+                // Try to get the entity name from the text content directly
+                const textElement = node.querySelector(
+                  "foreignObject div span.nodeLabel"
+                );
+                let entityName = "";
+
+                if (textElement) {
+                  entityName = textElement.textContent || "";
+                } else {
+                  // Fallback to the 'title' element if 'textElement' is not found
+                  const titleElement = node.querySelector("title");
+                  if (titleElement) {
+                    entityName = titleElement.textContent || "";
+                  }
                 }
-              }
 
-              if (entityName && onNodeClick) {
-                onNodeClick(entityName);
-              }
+                if (entityName && onNodeClick) {
+                  onNodeClick(entityName);
+                }
+              });
             });
-          });
+          }
         } catch (err) {
           console.error("Error rendering Mermaid diagram:", err);
           // console.log("Diagram definition:", diagramDefinition);
