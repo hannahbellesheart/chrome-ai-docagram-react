@@ -1,10 +1,11 @@
+# Overview
+
+Docagram uses Chrome's built-in AI to help you visualize content on the web. It uses the Summarization and Prompt APIs to extract relationships from text content and then converts those relationships into [Mermaid diagrams](https://mermaid.js.org/).
+
 ![Docagram explainer diagrams](image-1.png)
 
 ![Docagram example output](image-2.png)
 
-# Overview
-
-Docagram uses Chrome's built-in AI to help you visualize content on the web. It uses the Summarization and Prompt APIs to extract relationships from text content and then converts those relationships into [Mermaid diagrams](https://mermaid.js.org/).
 
 # Built-In AI
 
