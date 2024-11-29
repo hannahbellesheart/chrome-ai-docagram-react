@@ -101,7 +101,7 @@ const Welcome: React.FC = () => {
           Code on the Rocks
         </a>
         <a
-          href="https://yourusername.com"
+          href="https://youtu.be/VkwgNrxnONw"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
