@@ -2,6 +2,10 @@
 
 ![Docagram example output](image-2.png)
 
+# Overview
+
+Docagram uses Chrome's built-in AI to help you visualize content on the web. It uses the Summarization and Prompt APIs to extract relationships from text content and then converts those relationships into [Mermaid diagrams](https://mermaid.js.org/).
+
 # Built-In AI
 
 This project uses the following APIs:
@@ -36,23 +40,7 @@ npm run dev
 
 In Chrome Canary, load the unpacked extension from the `/dist` folder. 
 
-# Mermaid Diagram Types
-
-- Flowchart (graph LR/TD)
-- Sequence diagrams (sequence): Show interactions between different parts over time
-- Class diagrams (classDiagram): Show relationships between classes in OOP
-- State diagrams (stateDiagram-v2): Show different states and transitions
-- Entity Relationship Diagrams (erDiagram): Show database relationships
-- User Journey (journey): Show user experience flows
-- Gantt charts (gantt): Show project schedules and tasks
-- Pie charts (pie): Show data in pie chart format
-- Git graphs (gitGraph): Visualize git branching and merging
-- C4 diagrams (C4Context, C4Container, etc.): Show software architecture
-- Mind maps (mindmap): Show hierarchical thought organization
-- Timeline (timeline): Show events in chronological order
-- Quadrant charts (quadrantChart): Show data in four quadrants
-
-# Want to build a Chrome Extension
+# Want to build a Chrome Extension?
 
 This repository demonstrates how to create a Chrome extension using React, TypeScript, TailwindCSS, and Vite.
 
