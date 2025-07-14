@@ -48,3 +48,5 @@ This repository demonstrates how to create a Chrome extension using React, TypeS
 More details can be found in this blog post:
 
 https://joemuller.com/posts/create-a-chrome-extension-with-react-typescript-and-tailwindcss/
+
+<img width="1554" height="4150" alt="image" src="https://github.com/user-attachments/assets/f51ea5b2-81cd-4b7e-9bc1-2b571f17c539" />
